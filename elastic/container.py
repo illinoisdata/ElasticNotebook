@@ -15,7 +15,8 @@ class DataContainer:
     def __init__(self, obj, prevOpEvent):
         try:
             if obj._is_illinois_data_container():
-                self = obj
+                self.__dict__['_illinoisBaseObj'] = obj._illinoisBaseObj
+                self.__dict__['_illinoisPrevOpEvent'] = obj._illinoisPrevOpEvent
                 return
         except:
             pass

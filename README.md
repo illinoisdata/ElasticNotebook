@@ -7,4 +7,4 @@ Intelligent scaling of stateful Python applications (e.g. a Jupyter notebook usi
 | Status             | Last Updated | Description                    | 
 | ------------------ | ------------ | ------------------------------ |
 | :white_check_mark: |  2022-02-18  | Setup GitHub actions for tests |
-| :bulb:             |  2022-02-18  | Setup experiment (storage adapter, object pickling, etc.) |
+| :white_check_mark: |  2022-04-04  | Setup experiment (storage adapter, object pickling, etc.) |

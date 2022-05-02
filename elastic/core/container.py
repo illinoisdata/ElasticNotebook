@@ -5,11 +5,7 @@
 
 import datetime
 
-from core.event import DataEvent
-
-data_events = []
-operation_events = []
-operation_event_lookup = {}
+from core.event import DataEvent, data_events
 
 class DataContainer:
     def __init__(self, obj, prevOpEvent):

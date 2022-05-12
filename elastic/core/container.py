@@ -20,9 +20,16 @@ class DataContainer:
         self.__dict__['_illinoisPrevOpEvent'] = prevOpEvent
             
     def __iter__(self):
-        for x in self._illinoisBaseObj.__iter__():
-            self.createDataEvent()
-            yield DataContainer(x, self._illinoisPrevOpEvent)
+        rtv = self.__dict__['_illinoisBaseObj'].__iter__() 
+        
+        self.createDataEvent()
+        return rtv
+            
+    def __next__(self):
+        rtv = self._illinoisBaseObject.__next__()
+        
+        self.createDataEvent()
+        return rtv
             
     def __call__(self, *args, **kwargs):
         rtv = self._illinoisBaseObject.__call__(*args, **kwargs)

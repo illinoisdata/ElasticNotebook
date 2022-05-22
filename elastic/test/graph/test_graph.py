@@ -12,6 +12,7 @@ from core.graph.node import Node
 from core.graph.node_set import NodeSet, NodeSetType
 from core.graph.versioned_var import VersionedVariable
 
+VAR_SIZE=1024
 
 class TestDependencyGraph(unittest.TestCase):
     def test_add_edge(self):
@@ -48,10 +49,10 @@ class TestDependencyGraph(unittest.TestCase):
 
     def get_test_node(self):
         var = uuid.uuid4()
-        return Node(VersionedVariable(var.hex, id(var), 1))
+        return Node(VersionedVariable(var.hex, id(var), 1), VAR_SIZE)
     
     def get_named_test_node(self, name, vid, ver=1):
-        return Node(VersionedVariable(name, vid, ver))
+        return Node(VersionedVariable(name, vid, ver), VAR_SIZE)
 
     def get_test_nodes(self, count):
         return [self.get_test_node() for _ in range(count)]

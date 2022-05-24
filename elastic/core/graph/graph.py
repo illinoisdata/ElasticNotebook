@@ -19,7 +19,7 @@ class DependencyGraph:
         # self.sink = NodeSet(nodes=[], type=NodeSetType.DUMMY)
         
     def add_edge(self, src: NodeSet, dst: NodeSet, oe: OperationEvent):
-        edge = Edge(oe, src, dst)
+        edge = Edge(oe, oe.duration, src, dst)
         self.edges.append(edge)
         src.edge = edge
         dst.edge = edge

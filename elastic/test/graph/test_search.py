@@ -14,6 +14,7 @@ from core.graph.search import find_path
 from core.graph.versioned_var import VersionedVariable
 import numpy as np
 
+VAR_SIZE=1024
 
 class TestFindPath(unittest.TestCase):
     def setUp(self):
@@ -77,7 +78,7 @@ class TestFindPath(unittest.TestCase):
         self.assertEqual(2, len(recompute_seq)) # 1 var in oe1 and 1 var in oe2 need to be recomputed
         
     def get_named_test_node(self, name, vid, ver=1):
-        return Node(VersionedVariable(name, vid, ver))
+        return Node(VersionedVariable(name, vid, ver), VAR_SIZE)
     
     def get_oe(self, exec_id):
         return OperationEvent(exec_id, None, None, None, "", "", [])

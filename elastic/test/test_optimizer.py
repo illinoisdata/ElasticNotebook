@@ -1,5 +1,7 @@
 import unittest
 
+import os, sys
+sys.path.insert(0, os.path.abspath(".."))
 from algorithm.selector import Selector
 from algorithm.optimizer import OptimizerGreedy
 from core.graph.graph import DependencyGraph

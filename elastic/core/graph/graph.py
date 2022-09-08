@@ -16,6 +16,7 @@ class DependencyGraph:
     def __init__(self) -> None:
         self.edges = []
         self.active_nodes = {}
+        self.migration_speed_bps = 1
         # self.sink = NodeSet(nodes=[], type=NodeSetType.DUMMY)
         
     def add_edge(self, src: NodeSet, dst: NodeSet, oe: OperationEvent):
@@ -33,3 +34,6 @@ class DependencyGraph:
     def add_active_nodes(self, nodes: List[Node]):
         for node in nodes:
             self.add_active_node(node)
+
+    def set_migration_speed(self, migration_speed: float):
+        self.migration_speed_bps = migration_speed

@@ -3,9 +3,6 @@
 #
 # Copyright 2021-2022 University of Illinois
 
-import os, sys
-sys.path.insert(0, os.path.abspath(".."))
-
 from typing import List
 from algorithm.selector import Selector
 from core.graph.graph import DependencyGraph

@@ -15,7 +15,7 @@ CODE_PATH = "./code.py"
 OBJECT_PATH_PREFIX = "./obj_"
 
 def migrate(objects_to_migrate: List,
-            code_to_migrate: str, 
+            oe_to_migrate: List,
             storage: ExternalStorage,
             context_items: List):
     """
@@ -27,7 +27,7 @@ def migrate(objects_to_migrate: List,
     Args:
         objects_to_migrate (List):
             a list of python objects to migrate
-        code_to_migrate (str):
+        oe_to_migrate (str):
             a string containing all the code needed for recomputation
         metadata (MigrationMetadata):
             a JSON structure containing migration metadata

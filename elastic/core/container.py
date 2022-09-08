@@ -180,6 +180,12 @@ class DataContainer:
     
     def get_base_type(self):
         return type(self._illinoisBaseObj)
+
+    def __repl__(self):
+        return "DataContainer with base ID {} and type {}," \
+               " previous operation event was {}".format(self.get_base_id,
+                                                         self.get_base_type,
+                                                         type(self._illinoisBaseObj))
     
     def createDataEvent(self):
         data_events.append(DataEvent(self, 

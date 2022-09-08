@@ -4,6 +4,7 @@
 # Copyright 2021-2022 University of Illinois
 
 data_events = []
+data_containers = []
 operation_events = []
 operation_event_lookup = {}
 

@@ -37,7 +37,7 @@ class ExternalStorage(Adapter):
 
 
     def create(self, path: Path):
-        """ExternalStorage selects the adapter that matches the scheme of the path,
+        """ExternalStorage selects the ad apter that matches the scheme of the path,
         and performs corresponding create operation using that matching adapter.
 
         Args:

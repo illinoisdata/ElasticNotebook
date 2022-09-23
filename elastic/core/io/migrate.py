@@ -3,71 +3,71 @@
 #
 # Copyright 2021-2022 University of Illinois
 
-import pickle
-from pathlib import Path
-from typing import List
-from core.common.migration_metadata import MigrationMetadata
-
-from core.io.external_storage import ExternalStorage
-
-METADATA_PATH = "../../experiment/metadata.json"
-CODE_PATH = "./code.py"
-OBJECT_PATH_PREFIX = "./obj_"
-
-def migrate(nodes_to_migrate: List,
-            edges_to_migrate: List,
-            notebook_name):
-    """
-    (1) Iterate over all objects in `objects_to_migrate`. For each object
-        (1a) Pickle the object
-        (1b) Write to external storage
-    (2) Write code and metadata to external storage
-
-    Args:
-        objects_to_migrate (List):
-            a list of python objects to migrate
-        oe_to_migrate (str):
-            a string containing all the code needed for recomputation
-        metadata (MigrationMetadata):
-            a JSON structure containing migration metadata
-        external_storage (ExternalStorage):
-            a wrapper for any storage adapter (local fs, cloud storage, etc.)
-        context_items (List):
-            a list of all objects' name to value mapping in global/local context of caller
-    """
-
-    # Convert to dictionary for migration
-    data_container_dict = {}
-    for node in nodes_to_migrate:
-        data_container_dict[node.var.name] = node.dc.get_item()
-
-    recomputation_code = []
-
-    # Iterate over cells to recompute
-    for edge in edges_to_migrate:
-        # Find input variables of cell code; these variables should be initialized prior to cell code execution.
-        for node in edge.src.nodes:
-            if node.var.name in data_container_dict:
-                recomputation_code.append("{} = data_container_dict[\"{}\"]".format(node.var.name, node.var.name))
-
-        # Find output variables of cell; assign values to them after executing cell
-        dst_names = []
-        for node in edge.dst.nodes:
-            dst_names.append(node.var.name)
-
-        # Add cell code (with @recordevent trimmed) to recomputation code
-        trimmed_code = edge.oe.cell_func_code.split(' ', 1)[1].split(' return ')[0]
-        trimmed_code = 'def ' + trimmed_code
-        trimmed_code += ' return ' + ", ".join(dst_names)
-        recomputation_code.append(trimmed_code)
-
-        # Assign values to output variables after executing cell
-        recomputation_code.append(", ".join(dst_names) + " = " + edge.oe.cell_func_name + "()")
-
-        file = open(notebook_name, 'wb')
-        pickle.dump((data_container_dict, recomputation_code), file)
-
-    return recomputation_code
+# import pickle
+# from pathlib import Path
+# from typing import List
+# from core.common.migration_metadata import MigrationMetadata
+#
+# from core.io.external_storage import ExternalStorage
+# 
+# METADATA_PATH = "../../experiment/metadata.json"
+# CODE_PATH = "./code.py"
+# OBJECT_PATH_PREFIX = "./obj_"
+#
+# def migrate(nodes_to_migrate: List,
+#             edges_to_migrate: List,
+#             notebook_name):
+#     """
+#     (1) Iterate over all objects in `objects_to_migrate`. For each object
+#         (1a) Pickle the object
+#         (1b) Write to external storage
+#     (2) Write code and metadata to external storage
+#
+#     Args:
+#         objects_to_migrate (List):
+#             a list of python objects to migrate
+#         oe_to_migrate (str):
+#             a string containing all the code needed for recomputation
+#         metadata (MigrationMetadata):
+#             a JSON structure containing migration metadata
+#         external_storage (ExternalStorage):
+#             a wrapper for any storage adapter (local fs, cloud storage, etc.)
+#         context_items (List):
+#             a list of all objects' name to value mapping in global/local context of caller
+#     """
+#
+#     # Convert to dictionary for migration
+#     data_container_dict = {}
+#     for node in nodes_to_migrate:
+#         data_container_dict[node.var.name] = node.dc.get_item()
+#
+#     recomputation_code = []
+#
+#     # Iterate over cells to recompute
+#     for edge in edges_to_migrate:
+#         # Find input variables of cell code; these variables should be initialized prior to cell code execution.
+#         for node in edge.src.nodes:
+#             if node.var.name in data_container_dict:
+#                 recomputation_code.append("{} = data_container_dict[\"{}\"]".format(node.var.name, node.var.name))
+#
+#         # Find output variables of cell; assign values to them after executing cell
+#         dst_names = []
+#         for node in edge.dst.nodes:
+#             dst_names.append(node.var.name)
+#
+#         # Add cell code (with @recordevent trimmed) to recomputation code
+#         trimmed_code = edge.oe.cell_func_code.split(' ', 1)[1].split(' return ')[0]
+#         trimmed_code = 'def ' + trimmed_code
+#         trimmed_code += ' return ' + ", ".join(dst_names)
+#         recomputation_code.append(trimmed_code)
+#
+#         # Assign values to output variables after executing cell
+#         recomputation_code.append(", ".join(dst_names) + " = " + edge.oe.cell_func_name + "()")
+#
+#         file = open(notebook_name, 'wb')
+#         pickle.dump((data_container_dict, recomputation_code), file)
+#
+#     return recomputation_code
 
         # obj_pickled = pickle.dumps(obj)
         # obj_path = "{}{}".format(OBJECT_PATH_PREFIX, id(obj))
@@ -86,3 +86,70 @@ def migrate(nodes_to_migrate: List,
     #                                    .to_json_str()
     # metadata_json = str.encode(metadata_json)
     # storage.write_all(Path(METADATA_PATH), metadata_json)
+
+import pickle
+from pathlib import Path
+from typing import List, Dict
+from core.common.migration_metadata import MigrationMetadata
+
+from core.io.external_storage import ExternalStorage
+
+METADATA_PATH = "./metadata.json"
+CODE_PATH = "./code.py"
+OBJECT_PATH_PREFIX = "./obj_"
+OE_PATH_PREFIX = "./oe_"
+
+def migrate(objects_to_migrate: List,
+            oe_to_migrate: List,
+            storage: ExternalStorage,
+            input_mappings: Dict,
+            output_mappings: Dict,
+            context_items: Dict):
+    """
+    (1) Iterate over all objects and operation events. For each
+        (1a) Pickle the object / oe
+        (1b) Write to external storage
+    (2) Write metadata to external storage
+
+    Args:
+        objects_to_migrate (List):
+            a list of python objects to migrate
+        oe_to_migrate (List):
+            a list of oe for recomputation
+        external_storage (ExternalStorage):
+            a wrapper for any storage adapter (local fs, cloud storage, etc.)
+        input_mappings (Dict):
+            mappings from functions to their corresponding input variable names
+        output_mappings (Dict):
+            mappings from functions to their corresponding output variable names
+        context_items (List):
+            a list of all objects' name to value mapping in global/local context of caller
+    """
+    objects_migrated = {}
+    for obj_name in objects_to_migrate:
+        obj = context_items[obj_name]
+        obj_pickled = pickle.dumps(obj)
+        obj_path = "{}{}".format(OBJECT_PATH_PREFIX, id(obj))
+        # FIXME: might be optimizable using batch writes (especially for remote storage using req/resp)
+        storage.write_all(Path(obj_path), obj_pickled)
+        objects_migrated[obj_path] = obj_name
+
+    oe_migrated = {}
+    order_list = []
+    for oe in oe_to_migrate:
+        oe_code = oe.cell_func_code
+        oe_pickled = pickle.dumps(oe_code)
+        oe_path = "{}{}".format(OE_PATH_PREFIX, id(oe))
+        storage.write_all(Path(oe_path), oe_pickled)
+        oe_migrated[oe_path] = oe.cell_func_name
+        order_list.append(oe.cell_func_name)
+
+    # assume that the list of ids of objects to migrate is already part of the metadata
+    metadata_json = MigrationMetadata().with_objects_migrated(objects_migrated)\
+                                       .with_recompute_code(oe_migrated)\
+                                       .with_input_mappings(input_mappings)\
+                                       .with_output_mappings(output_mappings)\
+                                       .with_order_list(order_list)\
+                                       .to_json_str()
+    metadata_json = str.encode(metadata_json)
+    storage.write_all(Path(METADATA_PATH), metadata_json)

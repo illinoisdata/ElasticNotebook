@@ -34,6 +34,7 @@ class DependencyGraph:
 
     # Reduce the size of the graph for migration by deleting the contents of some nodes (and recomputing them post-
     # migration).
+
     def trim_graph(self, selector):
         selector.dependency_graph = self
         selector.active_nodes = self.active_nodes

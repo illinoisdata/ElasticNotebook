@@ -12,6 +12,7 @@ class Selector:
         The `Selector` class provides interfaces to pick a subset of active nodes to migrate based on
             various heuristics and algorithms.
     """
+
     def __init__(self, migration_speed_bps=1):
         self.dependency_graph = None
         self.active_nodes = None

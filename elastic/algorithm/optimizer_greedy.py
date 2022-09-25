@@ -10,6 +10,7 @@ import numpy as np
 
 
 class OptimizerGreedy(Selector):
+
     def __init__(self, migration_speed_bps=1):
         super().__init__(migration_speed_bps)
 

@@ -5,12 +5,12 @@
 
 import unittest
 from unittest import mock
-from core.event import OperationEvent, operation_events
+from core.notebook.operation_event import OperationEvent
 
 from core.graph.graph import DependencyGraph
 from core.graph.node import Node
 from core.graph.node_set import NodeSet, NodeSetType
-from core.graph.search import find_path
+from core.graph.recompute import find_path
 from core.graph.versioned_var import VersionedVariable
 import numpy as np
 

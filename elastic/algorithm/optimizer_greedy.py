@@ -14,9 +14,9 @@ import numpy as np
 
 
 class OptimizerGreedy(Selector):
-    def __init__(self, dependency_graph: DependencyGraph,
-                 active_nodes: List[Node]):
-        super().__init__(dependency_graph, active_nodes)
+    def __init__(self, dependency_graph: DependencyGraph, migration_speed_bps=1):
+        super().__init__(dependency_graph, migration_speed_bps)
+
         self.active_nodes = set(self.active_nodes)
 
         self.compute_graph = None
@@ -26,8 +26,6 @@ class OptimizerGreedy(Selector):
 
         # Edges required to recompute a give nodeset
         self.recomputation_edges = {}
-
-        self.migration_speed = dependency_graph.migration_speed_bps
 
         self.idx = 0
 
@@ -65,7 +63,7 @@ class OptimizerGreedy(Selector):
             srcs.append(src_idx)
             dsts.append(dst_idx)
 
-            self.compute_graph.add_edge(src_idx, dst_idx, weight=edge.duration)
+            self.compute_graph.add_edge(src_idx, dst_idx, weight=edge.oe.duration)
 
             # The output node set has a nonempty strict subset of active nodes
             active_node_subset = set(edge.dst.nodes).intersection(self.active_nodes)
@@ -98,7 +96,7 @@ class OptimizerGreedy(Selector):
     # Compute the total cost to migrate the unique nodes specified node sets.
     def compute_migration_cost(self, node_sets):
         migrate_nodes = set().union(*[self.idx_to_node_set[i].nodes for i in node_sets])
-        return sum([i.size for i in migrate_nodes]) / self.migration_speed
+        return sum([i.vs.get_size() for i in migrate_nodes]) / self.migration_speed_bps
 
     # Compute the total cost to recompute the specified node sets.
     def compute_recomputation_cost(self, node_sets):

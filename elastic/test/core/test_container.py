@@ -1,6 +1,6 @@
 import unittest
 
-from core.container import DataContainer
+from core.notebook.variable_snapshot import DataContainer
 
 class TestDataContainer(unittest.TestCase):
     def test_init(self):

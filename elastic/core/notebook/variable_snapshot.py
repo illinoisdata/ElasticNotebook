@@ -6,12 +6,14 @@
 import datetime
 
 import sys
-from core.event import DataEvent, data_events
+from core.globals import variable_snapshot_accesses
 
-class DataContainer:
+
+# A VariableSnapshot is an instance/version of a variable.
+class VariableSnapshot:
     def __init__(self, varname, version, obj, prevOpEvent):
         try:
-            if obj._is_illinois_data_container():
+            if obj._is_illinois_variable_snapshot():
                 self.__dict__['_varname'] = varname
                 self.__dict__['_version'] = version
                 self.__dict__['_illinoisBaseObj'] = obj._illinoisBaseObj
@@ -27,29 +29,29 @@ class DataContainer:
     def __iter__(self):
         rtv = self.__dict__['_illinoisBaseObj'].__iter__() 
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
             
     def __next__(self):
         rtv = self._illinoisBaseObject.__next__()
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
             
     def __call__(self, *args, **kwargs):
         rtv = self._illinoisBaseObject.__call__(*args, **kwargs)
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
             
     def __len__(self):
         rtv = self._illinoisBaseObj.__len__()
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __int__(self):
-        self.createDataEvent()
+        self.create_access()
         return int(self._illinoisBaseObj)
     
     def __index__(self):
@@ -58,29 +60,29 @@ class DataContainer:
     def __bool__(self):
         rtv = self._illinoisBaseObject.__bool__()
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __neg__(self):
-        self.createDataEvent()
+        self.create_access()
         return self._illinoisBaseObj.__neg__()
     
     def __invert__(self):
-        self.createDataEvent()
+        self.create_access()
         return self._illinoisBaseObj.__invert__()
     
     def __pos__(self):
-        self.createDataEvent()
+        self.create_access()
         return self._illinoisBaseObj.__pos__()
     
     def __abs__(self):
-        self.createDataEvent()
+        self.create_access()
         return self._illinoisBaseObj.__abs__()
     
     def __add__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return self._illinoisBaseObj + other._illinoisBaseObj
         return self._illinoisBaseObj + other
     
@@ -88,9 +90,9 @@ class DataContainer:
         return self.__add__(other.__neg__())
     
     def __mul__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return self._illinoisBaseObj * other._illinoisBaseObj
         return self._illinoisBaseObj * other
     
@@ -98,65 +100,65 @@ class DataContainer:
         return other.__mul__(self)
     
     def __truediv__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return self._illinoisBaseObj / other._illinoisBaseObj
         return self._illinoisBaseObj / other
     
     def __rtruediv__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return other._illinoisBaseObj / self._illinoisBaseObj
         return other / self._illinoisBaseObj
     
     def __floordiv__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return self._illinoisBaseObj // other._illinoisBaseObj
         return self._illinoisBaseObj // other
     
     def __rfloordiv__(self, other):
-        self.createDataEvent()
-        if other.is_data_container():
-            other.createDataEvent()
+        self.create_access()
+        if other.is_variable_snapshot():
+            other.create_access()
             return other._illinoisBaseObj // self._illinoisBaseObj
         return other // self._illinoisBaseObj
     
     def __contains__(self, key):
         rtv = key in self._illinoisBaseObj
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __getitem__(self, key):
         rtv = self._illinoisBaseObj[key]
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __setitem__(self, key, value):
         self._illinoisBaseObj.__setitem__(key, value)
         
-        self.createDataEvent()
+        self.create_access()
     
     def __delitem__(self, key):
         self._illinoisBaseObj.__delitem__(key)
         
-        self.createDataEvent()
+        self.create_access()
     
     def __str__(self):
         rtv = self._illinoisBaseObj.__str__()
     
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __repr__(self):
         rtv = self._illinoisBaseObj.__repr__()
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     def __setattr__(self, k, v):
@@ -165,12 +167,12 @@ class DataContainer:
         else:
             setattr(self._illinoisBaseObj, k, v)
 
-        self.createDataEvent()
+        self.create_access()
 
     def __getattr__(self, k):
         rtv = getattr(self._illinoisBaseObj, k)
         
-        self.createDataEvent()
+        self.create_access()
         return rtv
     
     # for pickling 
@@ -181,11 +183,17 @@ class DataContainer:
     def __class__(self):
         return self._illinoisBaseObj.__class__
     
-    def _is_illinois_data_container(self):
+    def _is_illinois_variable_snapshot(self):
         return True
 
     def get_item(self):
         return self._illinoisBaseObj
+
+    def set_item(self, item):
+        self.__dict__['_illinoisBaseObj'] = item
+
+    def clear_item(self):
+        self.__dict__['_illinoisBaseObj'] = None
 
     def get_name(self):
         return self._varname
@@ -203,18 +211,16 @@ class DataContainer:
         return sys.getsizeof(self._illinoisBaseObj)
 
     def __repl__(self):
-        return "DataContainer with base ID {} and type {}," \
+        return "VariableSnapshot with base ID {} and type {}," \
                " previous operation event was {}".format(self.get_base_id,
                                                          self.get_base_type,
                                                          type(self._illinoisBaseObj))
-    
-    def createDataEvent(self):
-        data_events.append(DataEvent(self, 
-                                     self.get_base_id(), 
-                                     self.get_base_type(),
-                                     datetime.datetime.now(),
-                                     self._illinoisPrevOpEvent))
 
-class OperationContainer:
-    def __init__(self, dict):
-        self.items = dict
+    def create_access(self):
+        variable_snapshot_accesses.append(self)
+
+
+# A set of output variable snapshots from an operation event.
+class VariableSnapshotSet:
+    def __init__(self, variable_snapshots):
+        self.variable_snapshots = variable_snapshots

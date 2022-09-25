@@ -6,7 +6,6 @@
 import unittest
 from unittest import mock
 import uuid
-from core.event import OperationEvent
 from core.graph.graph import DependencyGraph
 from core.graph.node import Node
 from core.graph.node_set import NodeSet, NodeSetType

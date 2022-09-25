@@ -98,7 +98,7 @@ METADATA_PATH = "./metadata.json"
 CODE_PATH = "./code.py"
 OBJECT_PATH_PREFIX = "./obj_"
 OE_PATH_PREFIX = "./oe_"
-
+`
 def migrate(objects_to_migrate: List,
             oe_to_migrate: List,
             storage: ExternalStorage,

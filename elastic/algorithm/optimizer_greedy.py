@@ -3,21 +3,15 @@
 #
 # Copyright 2021-2022 University of Illinois
 
-from typing import List
 from algorithm.selector import Selector
-from core.graph.graph import DependencyGraph
-from core.graph.node import Node
-from core.graph.edge import Edge
 from core.graph.node_set import NodeSet
 import networkx as nx
 import numpy as np
 
 
 class OptimizerGreedy(Selector):
-    def __init__(self, dependency_graph: DependencyGraph, migration_speed_bps=1):
-        super().__init__(dependency_graph, migration_speed_bps)
-
-        self.active_nodes = set(self.active_nodes)
+    def __init__(self, migration_speed_bps=1):
+        super().__init__(migration_speed_bps)
 
         self.compute_graph = None
         self.active_node_sets = set()
@@ -45,6 +39,7 @@ class OptimizerGreedy(Selector):
 
     # Construct compute graph from node sets
     def construct_graph(self):
+        self.active_nodes = set(self.active_nodes)
         self.compute_graph = nx.DiGraph()
         srcs = []
         dsts = []

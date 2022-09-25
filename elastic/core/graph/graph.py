@@ -9,6 +9,7 @@ from core.notebook.record_event import RecordEvent
 from core.graph.edge import Edge
 from core.graph.node_set import NodeSet
 from core.graph.recompute import find_edges_to_recompute
+from algorithm.selector import Selector
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,16 @@ class DependencyGraph:
 
     # Reduce the size of the graph for migration by deleting the contents of some nodes (and recomputing them post-
     # migration).
-    def trim_graph(self, nodes_to_migrate):
+    def trim_graph(self, selector):
+        selector.dependency_graph = self
+        selector.active_nodes = self.active_nodes
+        nodes_to_migrate = selector.select_nodes()
+
+        print("---------------------------")
+        print("Nodes to migrate:")
+        for node in nodes_to_migrate:
+            print(node.vs.get_name(), node.vs.get_version(), node.vs.get_size())
+
         self.nodes_to_recompute = set(self.active_nodes) - set(nodes_to_migrate)
 
         # Delete the contents of the nodes to recompute

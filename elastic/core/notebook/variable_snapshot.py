@@ -175,7 +175,7 @@ class VariableSnapshot:
         self.create_access()
         return rtv
     
-    # for pickling 
+    # for pickling
     def __reduce__(self):
         return self._illinoisBaseObj.__reduce__()
     
@@ -193,7 +193,7 @@ class VariableSnapshot:
         self.__dict__['_illinoisBaseObj'] = item
 
     def clear_item(self):
-        self.__dict__['_illinoisBaseObj'] = None
+        self.__dict__['_illinoisBaseObj'] = EmptyObject()
 
     def get_name(self):
         return self._varname
@@ -210,6 +210,9 @@ class VariableSnapshot:
     def get_size(self):
         return sys.getsizeof(self._illinoisBaseObj)
 
+    def get_prev_oe(self):
+        return self._illinoisPrevOpEvent
+
     def __repl__(self):
         return "VariableSnapshot with base ID {} and type {}," \
                " previous operation event was {}".format(self.get_base_id,
@@ -224,3 +227,10 @@ class VariableSnapshot:
 class VariableSnapshotSet:
     def __init__(self, variable_snapshots):
         self.variable_snapshots = variable_snapshots
+
+
+# For pickling; pickle does not work with Nonetype.
+class EmptyObject:
+    def __init__(self):
+        pass
+

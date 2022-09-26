@@ -4,12 +4,14 @@
 # Copyright 2021-2022 University of Illinois
 
 import logging
+import types
 from core.notebook.operation_event import OperationEvent
+from core.notebook.variable_snapshot import VariableSnapshot, VariableSnapshotSet
 from core.notebook.record_event import RecordEvent
 from core.graph.edge import Edge
 from core.graph.node_set import NodeSet
 from core.graph.recompute import find_edges_to_recompute
-from algorithm.selector import Selector
+import core.globals
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,28 @@ class DependencyGraph:
             node.vs.clear_item()
 
     # Recompute non-migrated nodes post-migration by re-executing some cells.
-    def recompute_graph(self):
+    def recompute_graph(self, globals_dict):
+        globals_dict = dict(globals_dict, **globals())
+        # Reconstruct operation events and variable snapshots
+        snapshot_dict = {}
+        for edge in self.edges:
+            core.globals.operation_events.append(edge.oe)
+            for node in edge.src.nodes + edge.dst.nodes:
+                if (node.name, node.version) not in snapshot_dict:
+                    node.vs = VariableSnapshot(node.name, node.version, node.vs, node.prev_oe)
+                    core.globals.variable_snapshots.append(node.vs)
+                    snapshot_dict[(node.name, node.version)] = node.vs
+                else:
+                    node.vs = snapshot_dict[(node.name, node.version)]
+
+            edge.oe.input_variable_snapshots.clear()
+            edge.oe.output_variable_snapshots.clear()
+            for node in edge.src.nodes:
+                edge.oe.input_variable_snapshots.append(node.vs)
+            for node in edge.dst.nodes:
+                edge.oe.output_variable_snapshots.append(node.vs)
+
+        # Recompute edges
         edges_to_recompute = find_edges_to_recompute(self)
         edges_to_recompute.sort(key=lambda x: x.oe.start)
         for edge in edges_to_recompute:
@@ -60,10 +83,12 @@ class DependencyGraph:
 
             # declare input nodes into the kernel
             for node in edge.src.nodes:
-                exec(node.vs.get_name() + "=node.vs.get_item()")
+                globals_dict[node.vs.get_name()] = node.vs.get_item()
 
             # Run cell code
-            output_variable_snapshot_set = edge.oe.cell_func_obj().variable_snapshots
+            func = types.FunctionType(edge.oe.cell_func_code, globals_dict, edge.oe.cell_func_name)
+            output_variable_snapshot_set = func().variable_snapshots
+            print(output_variable_snapshot_set)
 
             # Assign outputs to output nodes
             for node in edge.dst.nodes:
@@ -72,8 +97,10 @@ class DependencyGraph:
         # Clear old versions of variables
         for edge in edges_to_recompute:
             for node in edge.dst.nodes:
-                if node not in self.active_nodes:
+                if node.version < core.globals.variable_version[node.name]:
                     node.vs.clear_item()
+
+        self.nodes_to_recompute.clear()
 
     # Declares active nodes and functions into the kernel.
     def reconstruct_notebook(self):

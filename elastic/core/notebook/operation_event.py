@@ -8,7 +8,6 @@ class OperationEvent:
     def __init__(self, exec_uuid, start, end, duration,
                  cell_func_name,
                  cell_func_code,
-                 cell_func_obj,
                  input_variable_snapshots):
         self.exec_uuid = exec_uuid
         self.start = start
@@ -16,7 +15,6 @@ class OperationEvent:
         self.duration = duration
         self.cell_func_name = cell_func_name
         self.cell_func_code = cell_func_code
-        self.cell_func_obj = cell_func_obj
         self.input_variable_snapshots = input_variable_snapshots
         self.output_variable_snapshots = []
 

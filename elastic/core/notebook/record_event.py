@@ -29,8 +29,7 @@ def RecordEvent(func):
                             end=end_time, 
                             duration=(end_time - start_time).total_seconds(),
                             cell_func_name=func.__name__,
-                            cell_func_code=inspect.getsource(func),
-                            cell_func_obj=func,
+                            cell_func_code=func.__code__,
                             input_variable_snapshots=input_variable_snapshots)
         operation_events.append(oe)
         # operation_event_lookup[exec_uuid] = oe

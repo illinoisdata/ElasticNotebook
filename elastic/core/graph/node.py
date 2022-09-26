@@ -15,3 +15,8 @@ class Node:
 
         # Input nodesets in the dependency graph containing this node.
         self.input_nodesets = []
+
+        # Pointers for graph reconstruction
+        self.name = vs.get_name()
+        self.version = vs.get_version()
+        self.prev_oe = vs.get_prev_oe()

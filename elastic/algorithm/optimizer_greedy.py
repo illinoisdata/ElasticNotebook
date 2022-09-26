@@ -14,12 +14,16 @@ class OptimizerGreedy(Selector):
     def __init__(self, migration_speed_bps=1):
         super().__init__(migration_speed_bps)
 
+        # Augmented computation graph
         self.compute_graph = None
+
+        # A node set is active if all of its nodes are active.
         self.active_node_sets = set()
 
+        # Unique index number assigned to node sets to speedup lookup
         self.idx_to_node_set = {}
 
-        # Edges required to recompute a give nodeset
+        # Edges required to recompute a give nodeset.
         self.recomputation_edges = {}
 
         self.idx = 0

@@ -5,77 +5,38 @@
 
 import json
 from typing import List, Dict
+from core.graph.graph import DependencyGraph
 
-KEY_OBJECTS_MIGRATED = "objectsMigrated"
-KEY_RECOMPUTE_CODE = "recomputeCode"
-KEY_INPUT_MAPPINGS = "inputMappings"
-KEY_OUTPUT_MAPPINGS = "outputMappings"
-KEY_ORDER_LIST = "orderList"
+KEY_DEPENDENCY_GRAPH = "dependencyGraph"
+KEY_VARIABLE_VERSION = "variableVersion"
 
 class MigrationMetadata:
     def __init__(self):
-        pass
+        self.dependency_graph = None
+        self.variable_version = None
 
-
-    def with_objects_migrated(self, objects: Dict):
-        self.objects_migrated = objects
+    def with_dependency_graph(self, graph: DependencyGraph):
+        self.dependency_graph = graph
         return self
 
+    def get_dependency_graph(self):
+        return self.dependency_graph
 
-    def get_objects_migrated(self):
-        return self.objects_migrated
-
-
-    def with_recompute_code(self, recompute: Dict):
-        self.recomputeCode = recompute
+    def with_variable_version(self, variable_version: Dict):
+        self.variable_version = variable_version
         return self
 
-
-    def get_recompute_code(self):
-        return self.recomputeCode
-
-
-    def with_input_mappings(self, input: Dict):
-        self.input_mappings = input
-        return self
-
-
-    def get_input_mappings(self):
-        return self.input_mappings
-
-
-    def with_output_mappings(self, ouput: Dict):
-        self.output_mappings = ouput
-        return self
-
-
-    def get_output_mappings(self):
-        return self.output_mappings
-
-
-    def with_order_list(self, order: List):
-        self.order_list = order
-        return self
-
-
-    def get_order_list(self):
-        return self.order_list
-
+    def get_variable_version(self):
+        return self.variable_version
 
     def to_json_str(self) -> str:
         return json.dumps({
-            "objectsMigrated": self.objects_migrated,
-            "recomputeCode": self.recomputeCode,
-            "inputMappings": self.input_mappings,
-            "outputMappings": self.output_mappings,
-            "orderList": self.order_list
+            "dependencyGraph": self.dependency_graph,
+            "variableVersion": self.variable_version
         })
 
 
     @staticmethod
     def from_json(kv: Dict):
-        return MigrationMetadata().with_objects_migrated(kv[KEY_OBJECTS_MIGRATED])\
-                                  .with_recompute_code(kv[KEY_RECOMPUTE_CODE])\
-                                  .with_input_mappings(kv[KEY_INPUT_MAPPINGS])\
-                                  .with_output_mappings(kv[KEY_OUTPUT_MAPPINGS])\
-                                  .with_order_list(kv[KEY_ORDER_LIST])
+        return MigrationMetadata().with_dependency_graph(kv[KEY_DEPENDENCY_GRAPH])\
+                                  .with_variable_version(kv[KEY_VARIABLE_VERSION])

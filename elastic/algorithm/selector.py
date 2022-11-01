@@ -6,6 +6,19 @@
 from typing import List
 from elastic.core.graph.variable_snapshot import VariableSnapshot
 
+from enum import Enum
+
+
+class OptimizerType(Enum):
+    """
+        String representations of all implemented optimizers.
+    """
+    EXACT = "exact"
+    GREEDY = "greedy"
+    RANDOM = "random"
+    MIGRATE_ALL = "migrate_all"
+    RECOMPUTE_ALL = "recompute_all"
+
 
 class Selector:
     """

@@ -5,7 +5,7 @@ import time
 
 from IPython import get_ipython
 from IPython.core.magic import (Magics, magics_class, cell_magic, line_magic)
-from OptimizerType import OptimizerType
+from elastic.algorithm.selector import OptimizerType
 
 from elastic.core.common.profile_migration_speed import profile_migration_speed
 from elastic.core.notebook.checkpoint import checkpoint

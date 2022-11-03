@@ -5,6 +5,7 @@
 import time
 
 from IPython import get_ipython
+from IPython.utils.capture import capture_output
 from ipykernel.zmqshell import ZMQInteractiveShell
 
 from elastic.core.graph.graph import DependencyGraph
@@ -32,7 +33,14 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, variabl
         if oe in oes_to_recompute:
             # Rerun cell code
             print("Rerunning cell", oe.cell_num)
-            get_ipython().run_cell(oe.cell)
+            cell_capture = capture_output(stdout=True, stderr=True, display=True)
+            try:
+                with cell_capture:
+                    print('Inside cell capture here')
+                    get_ipython().run_cell(oe.cell)
+            except Exception as e:
+                raise e
+            # get_ipython().run_cell(oe.cell)
         else:
             # Define output variables in the OE in the order they were defined.
             # i.e. x = 1, y = 2, then we define x followed by y.

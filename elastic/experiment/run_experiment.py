@@ -1,121 +1,109 @@
-import path
-import sys
-# directory reach
-directory = path.Path(__file__).abspath()
-# setting path
-sys.path.append(directory.parent.parent)
-
-"""
-TODO: update this experiment script. See 'numpy.ipynb' for an example annotated notebook and 'numpy_restore.ipynb'
-for an example notebook recovery.
-
-Annotated notebook summary:
-DONE    1. Create a cell with this line:
-        %load_ext elastic.core.notebook.elastic_notebook
-        This may require setting up the syspath.
-DONE    2. Set the log location and notebook name, i.e. %SetWriteLogLocation file.py, %SetNotebookName numpy
-DONE    3. Add %%RecordEvent before the first line of each cell.
-DONE    4. Set the optimizer, i.e. %SetOptimizer exact. See 'ElasticNotebook.py' for a list of optimizers.
-DONE    5. Either set or profile the migration speed, i.e. %ProfileMigrationSpeed file.pickle / 
-        %SetMigrationSpeed 100000.  
-        -------->>>>>> Write speed for data directory = 200MB/s i.e 200000000 bps
-DONE    6. Migrate the notebook: %Checkpoint file.py
-
-Recovery notebook summary:
-DONE    1. Create a cell with this line:
-        %load_ext elastic.core.notebook.elastic_notebook
-        This may require setting up the syspath.
-DONE    2. Set the log location, notebook name, and optimizer, i.e. %SetWriteLogLocation file.py, %SetNotebookName numpy,
-        %SetOptimizer exact.
-DONE    3. Recover the notebook: %LoadCheckpoint file.py
-"""
-
+from elastic.algorithm.selector import OptimizerType
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
-class ExperimentCode:
 
-    LOAD_EXT = """
+LOAD_EXT = """
 import sys, os
 sys.path.insert(0, os.path.abspath("../.."))
 %load_ext ElasticNotebook
 """
 
-    RECORD_EVENT = """
+RECORD_EVENT = """
 %%RecordEvent
 """
 
-    def set_optimizer(optimizerName):
-        return """
-%SetOptimizer """+optimizerName+"""
+DIRECTORY = "notebooks/"
+
+LOG_LOCATION = "/data/elastic-notebook/results"
+
+MIGRATION_FILE_DIR = "/data/elastic-notebook/checkpoints/"
+
+
+def set_optimizer(optimizer_name):
+    return """
+%SetOptimizer """+optimizer_name+"""
 """
 
-    def set_write_location(writeLogLocation):
-        return """
-%SetWriteLogLocation """+writeLogLocation+"""
+
+def set_write_location(self, write_log_location):
+    return """
+%SetWriteLogLocation """+write_log_location+"""
 """
 
-    def set_notebook_name(notebookName):
-        return """
-%SetNotebookName """+notebookName+"""
+
+def set_notebook_name(self, notebook_name):
+    return """
+%SetNotebookName """+notebook_name+"""
 """
 
-    def set_migration_speed(migrationSpeed):
-        return """
-%SetMigrationSpeed """+migrationSpeed+"""
+
+def set_migration_speed(self, migration_speed):
+    return """
+%SetMigrationSpeed """+migration_speed+"""
 """
 
-    def migrate_notebook(fileName):
-        return """
-%Checkpoint """+fileName+"""
+
+def migrate_notebook(self, filename):
+    return """
+%Checkpoint """+filename+"""
 """
 
-    def load_checkpoint(fileName):
-        return """
-%LoadCheckpoint """+fileName+"""
+
+def load_checkpoint(self, filename):
+    return """
+%LoadCheckpoint """+filename+"""
 """
 
 
 # Run the given notebook with the given optimizer
-def run_experiment(notebook="numpy.ipynb", optimizer="exact"):
+def run_notebook(notebook="numpy.ipynb"):
+    """
+        Run the specified notebook and create a checkpoint using each optimizer.
+    """
     # Experiment Code has code cells predefined
+    migration_file_name = MIGRATION_FILE_DIR + notebook + ".pickle"
+    migration_speed = "200000000"  # bps
 
-    e = ExperimentCode
-
-    
-    directory = "notebooks/"
-    log_location = "results/"
-    migration_speed = "200000000" #bps
-    migration_file_name = "checkpoint/"+notebook+".pickle"
     # read notebook
-    with open(directory + notebook) as f:
+    with open(DIRECTORY + notebook) as f:
         nb = nbformat.read(f, as_version=4)
 
     # Append "RecordEvent" magic function to all code cells
     for cell in nb["cells"]:
-        if(cell["cell_type"] == "code"):
-            cell["source"] = e.RECORD_EVENT + cell["source"]
+        if cell["cell_type"] == "code":
+            cell["source"] = RECORD_EVENT + cell["source"]
 
     # Inserting code to load ElasticNotebook magic class to the start of the notebook
-    nb["cells"].insert(0,nbformat.v4.new_code_cell(e.LOAD_EXT))
+    nb["cells"].insert(0, nbformat.v4.new_code_cell(LOAD_EXT))
 
-    # Adding code to checkpoint notebook
-    nb["cells"] += [nbformat.v4.new_code_cell(e.set_optimizer(optimizer)),
-                    nbformat.v4.new_code_cell(e.set_write_location(log_location)),
-                    nbformat.v4.new_code_cell(e.set_notebook_name(notebook)),
-                    nbformat.v4.new_code_cell(e.set_migration_speed(migration_speed)),
-                    nbformat.v4.new_code_cell(e.migrate_notebook(migration_file_name))]
+    # Add checkpointing code for each optimizer
+    for optimizer_enum in OptimizerType:
+        # Adding code to checkpoint notebook
+        nb["cells"] += [nbformat.v4.new_code_cell(set_optimizer(optimizer_enum.value)),
+                        nbformat.v4.new_code_cell(set_write_location(LOG_LOCATION)),
+                        nbformat.v4.new_code_cell(set_notebook_name(notebook)),
+                        nbformat.v4.new_code_cell(set_migration_speed(migration_speed)),
+                        nbformat.v4.new_code_cell(migrate_notebook(migration_file_name))]
 
     # execute the updated notebook
     ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
     ep.preprocess(nb)
 
+
+def restore_notebook(notebook="numpy.ipynb", optimizer='exact'):
+    """
+        Restore a notebook from the specified checkpoint.
+    """
+    migration_file_name = MIGRATION_FILE_DIR + notebook + ".pickle"
+
     # Reconstruction
     nb_recover = nbformat.v4.new_notebook()
-    nb_recover["cells"] += [nbformat.v4.new_code_cell(e.LOAD_EXT),
-                            nbformat.v4.new_code_cell(e.set_optimizer(optimizer)),
-                            nbformat.v4.new_code_cell(e.set_write_location(log_location)),
-                            nbformat.v4.new_code_cell(e.set_notebook_name(notebook)),
-                            nbformat.v4.new_code_cell(e.load_checkpoint(migration_file_name))]
+    nb_recover["cells"] += [nbformat.v4.new_code_cell(LOAD_EXT),
+                            nbformat.v4.new_code_cell(set_optimizer(optimizer)),
+                            nbformat.v4.new_code_cell(set_write_location(LOG_LOCATION)),
+                            nbformat.v4.new_code_cell(set_notebook_name(notebook)),
+                            nbformat.v4.new_code_cell(load_checkpoint(migration_file_name))]
 
+    ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
     ep.preprocess(nb_recover)

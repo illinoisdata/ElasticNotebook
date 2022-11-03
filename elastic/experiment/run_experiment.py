@@ -26,31 +26,31 @@ def set_optimizer(optimizer_name):
 """
 
 
-def set_write_location(self, write_log_location):
+def set_write_location(write_log_location):
     return """
 %SetWriteLogLocation """+write_log_location+"""
 """
 
 
-def set_notebook_name(self, notebook_name):
+def set_notebook_name(notebook_name):
     return """
 %SetNotebookName """+notebook_name+"""
 """
 
 
-def set_migration_speed(self, migration_speed):
+def set_migration_speed(migration_speed):
     return """
 %SetMigrationSpeed """+migration_speed+"""
 """
 
 
-def migrate_notebook(self, filename):
+def migrate_notebook(filename):
     return """
 %Checkpoint """+filename+"""
 """
 
 
-def load_checkpoint(self, filename):
+def load_checkpoint(filename):
     return """
 %LoadCheckpoint """+filename+"""
 """

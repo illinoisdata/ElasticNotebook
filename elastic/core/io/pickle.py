@@ -8,13 +8,14 @@ import pickle
 
 import pandas as pd
 import polars as pl
+import inspect, os
 
 
 def is_picklable(obj):
     """
         Checks whether an object is pickleable.
     """
-    if is_exception(obj):
+    if is_exception(obj) or inspect.ismodule(obj):
         return True
     try:
         # This function can crash.

@@ -24,7 +24,7 @@ def get_total_size(data):
                 for e in obj:
                     total_size = total_size + get_memory_size(e, False, visited)
             elif obj_type is dict:
-                for (k, v) in obj:
+                for k, v in obj.items():
                     total_size = total_size + get_memory_size(k, False, visited)
                     total_size = total_size + get_memory_size(v, False, visited)
             # function, method, class

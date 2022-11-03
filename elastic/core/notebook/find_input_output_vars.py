@@ -67,7 +67,8 @@ def find_input_output_vars(cell: str, existing_variables: set, shell: ZMQInterac
 
         # Checks to see if an input was not a primitive type and was used in the input of a function
         elif instruction.opname == "CALL_FUNCTION" or instruction.opname == "CALL_METHOD":
-            if type(shell.user_ns[last_variable]) not in (int, float, type(""), bool):
+            if last_variable in shell.user_ns and \
+                    type(shell.user_ns[last_variable]) not in (int, float, type(""), bool):
                 if last_variable in existing_variables:
                     output_variables[last_variable] = [output_idx, False]
                     output_idx += 1

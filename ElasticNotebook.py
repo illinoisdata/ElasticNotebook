@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys, traceback
 import time
+from os.path import dirname
 
 from IPython import get_ipython
 from IPython.core.magic import (Magics, magics_class, cell_magic, line_magic)
@@ -152,7 +153,7 @@ class ElasticNotebook(Magics):
         """
         # Profile the migration speed to filename.
         if not self.manual_migration_speed:
-            self.migration_speed_bps = profile_migration_speed(filename)
+            self.migration_speed_bps = profile_migration_speed(dirname(filename))
             self.selector.migration_speed_bps = self.migration_speed_bps
 
         # Checkpoint the notebook.

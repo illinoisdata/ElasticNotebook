@@ -37,4 +37,6 @@ def profile_migration_speed(dirname: str) -> float:
             break
     end_time = time.time()
     os.system("rm -rf {}".format(testing_dir))
-    return total_bytes / (end_time - start_time)
+    migration_speed_bps = total_bytes / (end_time - start_time)
+    print("migration speed (bps):", migration_speed_bps)
+    return migration_speed_bps

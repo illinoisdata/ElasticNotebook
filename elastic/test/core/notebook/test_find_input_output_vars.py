@@ -8,7 +8,7 @@ import unittest
 from IPython.terminal.interactiveshell import TerminalInteractiveShell
 from ipykernel.zmqshell import ZMQInteractiveShell
 
-from elastic.core.notebook.find_input_output_vars import find_input_output_vars
+from elastic.core.notebook.find_input_vars import find_input_vars
 from elastic.test.test_utils import get_test_input_nodeset, get_test_output_nodeset, get_problem_setting
 from elastic.core.notebook.checkpoint import checkpoint
 from elastic.algorithm.baseline import MigrateAllBaseline
@@ -28,7 +28,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["x"] = 1
         self.shell.user_ns["y"] = 1
 
-        input_vars, output_vars = find_input_output_vars("y = x", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("y = x", {"x"}, self.shell, [])
 
         # x is an input and y is an output.
         self.assertEqual({"x"}, input_vars)
@@ -45,7 +45,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["x"] = [1]
         self.shell.user_ns["y"] = 1
 
-        input_vars, output_vars = find_input_output_vars("y = len(x)", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("y = len(x)", {"x"}, self.shell, [])
 
         # x is an input and y is an output. 'len' is not an input.
         self.assertEqual({"x"}, input_vars)
@@ -59,7 +59,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["y"] = 1
         self.shell.user_ns["z"] = 2
 
-        input_vars, output_vars = find_input_output_vars("y = x\nz = x + 1", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("y = x\nz = x + 1", {"x"}, self.shell, [])
 
         # x is an input and y is an output. 'len' is not an input.
         self.assertEqual({"x"}, input_vars)
@@ -73,7 +73,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         """
             Test deletion of variable marked correctly.
         """
-        input_vars, output_vars = find_input_output_vars("del x", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("del x", {"x"}, self.shell, [])
 
         # x is an output.
         self.assertEqual(set(output_vars.keys()), {"x"})
@@ -88,7 +88,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         """
         self.shell.user_ns["x"] = 1
 
-        input_vars, output_vars = find_input_output_vars("del x\nx = 1", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("del x\nx = 1", {"x"}, self.shell, [])
 
         # x is an output.
         self.assertEqual(set(output_vars.keys()), {"x"})
@@ -103,7 +103,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         """
         self.shell.user_ns["x"] = 2
 
-        input_vars, output_vars = find_input_output_vars("x += 1", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("x += 1", {"x"}, self.shell, [])
 
         # x is modified; it is both an input and an output.
         self.assertEqual({"x"}, set(input_vars))
@@ -116,7 +116,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["y"] = 1
         self.shell.user_ns["z"] = 1
 
-        input_vars, output_vars = find_input_output_vars("y = 1\nz = y", {"x"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("y = 1\nz = y", {"x"}, self.shell, [])
 
         # y should only be an output of the cell.
         self.assertEqual(set(), set(input_vars))
@@ -129,7 +129,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["x"] = [1]
         self.shell.user_ns["s"] = "str"
 
-        input_vars, output_vars = find_input_output_vars("x.reverse()\ns.strip()", {"x", "s"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("x.reverse()\ns.strip()", {"x", "s"}, self.shell, [])
 
         # x is not a primitive, so it can potentially be modified; it is both an input and an output.
         self.assertEqual({"x", "s"}, set(input_vars))
@@ -142,7 +142,7 @@ class TestFindInputOutputVars(unittest.TestCase):
         self.shell.user_ns["x"] = [1]
         self.shell.user_ns["s"] = "str"
 
-        input_vars, output_vars = find_input_output_vars("print(x)\nprint(s)", {"x", "s"}, self.shell, [])
+        input_vars, output_vars = find_input_vars("print(x)\nprint(s)", {"x", "s"}, self.shell, [])
 
         # x is not a primitive, so it can potentially be modified; it is both an input and an output.
         self.assertEqual({"x", "s"}, set(input_vars))
@@ -158,7 +158,7 @@ class TestFindInputOutputVars(unittest.TestCase):
             File "/var/folders/t9/7bppp22j4nq50851rm2rb7780000gn/T/ipykernel_5202/3652387590.py", line 2, in <module>
             print(nonexistent_variable)
         """
-        input_vars, output_vars = find_input_output_vars(
+        input_vars, output_vars = find_input_vars(
             "y = x\nprint(nonexistent_variable)\nz = x", {"x"}, self.shell, [traceback_str])
 
         # Since the code stopped on line 2 (print(nonexistent_variable)), z was never assigned.

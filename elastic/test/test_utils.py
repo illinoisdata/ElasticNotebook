@@ -4,7 +4,7 @@
 # Copyright 2021-2022 University of Illinois
 from elastic.core.graph.graph import DependencyGraph
 from elastic.core.graph.variable_snapshot import VariableSnapshot
-from elastic.core.graph.operation_event import OperationEvent
+from elastic.core.graph.cell_execution import CellExecution
 from elastic.core.graph.node_set import NodeSet, NodeSetType
 
 
@@ -32,7 +32,7 @@ def get_test_oe(cell_num: int, cell="", cell_runtime=1, start_time=1,
     """
         Fast operation event creation with pre-filled fields.
     """
-    return OperationEvent(cell_num, cell, cell_runtime, start_time, src, dst)
+    return CellExecution(cell_num, cell, cell_runtime, start_time, src, dst)
 
 
 def get_problem_setting():
@@ -64,8 +64,8 @@ def get_problem_setting():
     dst3 = NodeSet([vs2], NodeSetType.OUTPUT)
 
     # Operation events
-    graph.add_operation_event("", 3, 0, src1, dst1)
-    graph.add_operation_event("", 0.1, 0, src2, dst2)
-    graph.add_operation_event("", 0.1, 0, src3, dst3)
+    graph.add_cell_execution("", 3, 0, src1, dst1)
+    graph.add_cell_execution("", 0.1, 0, src2, dst2)
+    graph.add_cell_execution("", 0.1, 0, src3, dst3)
 
     return graph, active_vss

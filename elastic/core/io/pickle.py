@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright 2021-2022 University of Illinois
@@ -7,10 +7,21 @@ import dill
 import pickle
 
 import pandas as pd
-import polars as pl
+# import polars as pl
 import inspect, os
 from scipy import sparse
+import time
+import seaborn
+import networkx
+import matplotlib.pyplot as plt
+import types
+import mmap
+import hashlib
 
+def is_picklable_fast(obj):
+    if type(obj) in {types.GeneratorType, mmap.mmap, hashlib.sha256}:
+        return False
+    return True
 
 def is_picklable(obj):
     """
@@ -33,7 +44,9 @@ def is_exception(obj):
     """
         List of objects which _is_picklable_dill returns false (or crashes) but are picklable.
     """
-    exceptions = [pd.DataFrame, pl.DataFrame, sparse.csr.csr_matrix]
+    if hasattr(obj, '__module__') and getattr(obj, '__module__', None).split(".")[0] in {plt.__name__, seaborn.__name__, networkx.__name__, pd.__name__}:
+        return True
+    exceptions = [pd.core.frame.DataFrame, sparse.csr.csr_matrix]
     return type(obj) in exceptions
 
 

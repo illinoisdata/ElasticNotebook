@@ -28,7 +28,7 @@ class TestMigrateRecover(unittest.TestCase):
         graph = DependencyGraph()
         vs1 = graph.create_variable_snapshot("x", 0, False)
         vs2 = graph.create_variable_snapshot("y", 0, False)
-        graph.add_operation_event("", 1, 1, get_test_input_nodeset([]), get_test_output_nodeset([vs1, vs2]))
+        graph.add_cell_execution("", 1, 1, get_test_input_nodeset([]), get_test_output_nodeset([vs1, vs2]))
 
         vss_to_migrate = {vs1}
         vss_to_recompute = {vs2}

@@ -4,7 +4,6 @@
 # Copyright 2021-2022 University of Illinois
 from collections import defaultdict
 
-import dill
 from pathlib import Path
 
 from ipykernel.zmqshell import ZMQInteractiveShell
@@ -35,24 +34,24 @@ def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: 
     # Retrieve variables
     variables = defaultdict(list)
     for vs in vss_to_migrate:
-        variables[vs.output_nodeset.operation_event].append((vs, shell.user_ns[vs.name]))
+        variables[vs.output_ce].append((vs, shell.user_ns[vs.name]))
 
     # Retrieve variables to migrate from the current session.
     variables = defaultdict(list)
     for vs in vss_to_migrate:
-        variables[vs.output_nodeset.operation_event].append((vs, shell.user_ns[vs.name]))
+        variables[vs.output_ce].append((vs, shell.user_ns[vs.name]))
 
     # Construct checkpoint JSON.
     adapter = FilesystemAdapter()
-    metadata_pickle = dill.dumps(CheckpointFile().with_dependency_graph(graph)
-                                 .with_variables(variables)
-                                 .with_vss_to_migrate(vss_to_migrate)
-                                 .with_vss_to_recompute(vss_to_recompute)
-                                 .with_oes_to_recompute(oes_to_recompute))
+    metadata = CheckpointFile().with_dependency_graph(graph)\
+               .with_variables(variables)\
+               .with_vss_to_migrate(vss_to_migrate)\
+               .with_vss_to_recompute(vss_to_recompute)\
+               .with_oes_to_recompute(oes_to_recompute)
 
     # Write the JSON file to the specified location. Uses the default location if a file path isn't specified.
     if filename:
         print("Checkpoint saved to:", filename)
-        adapter.write_all(Path(filename), metadata_pickle)
+        adapter.write_all(Path(filename), metadata)
     else:
-        adapter.write_all(Path(FILENAME), metadata_pickle)
+        adapter.write_all(Path(FILENAME), metadata)

@@ -15,7 +15,7 @@ class Adapter:
     def create(self, path: Path):
         raise NotImplementedError()
 
-    def write_all(self, path: Path, buf: bytes):
+    def write_all(self, path: Path, buf):
         raise NotImplementedError()
 
     def remove(self, path: Path):

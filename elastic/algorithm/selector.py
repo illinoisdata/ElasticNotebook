@@ -14,10 +14,14 @@ class OptimizerType(Enum):
         String representations of all implemented optimizers.
     """
     EXACT = "exact"
+    EXACT_C = "exact_c"
+    EXACT_R = "exact_r"
     GREEDY = "greedy"
     RANDOM = "random"
     MIGRATE_ALL = "migrate_all"
     RECOMPUTE_ALL = "recompute_all"
+    HEURISTIC = "heuristic"
+    GREEDY_SIMPLE = "greedy_simple"
 
 
 class Selector:
@@ -33,6 +37,7 @@ class Selector:
         """
         self.dependency_graph = None
         self.active_vss = None
+        self.overlapping_vss = None
         self.migration_speed_bps = migration_speed_bps
 
     def select_vss(self) -> set:

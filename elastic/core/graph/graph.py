@@ -5,10 +5,11 @@
 
 import logging
 from collections import defaultdict
+from typing import List
 
 from elastic.core.graph.variable_snapshot import VariableSnapshot
-from elastic.core.graph.operation_event import OperationEvent
-from elastic.core.graph.node_set import NodeSet
+from elastic.core.graph.cell_execution import CellExecution
+#from elastic.core.graph.node_set import NodeSet
 
 
 class DependencyGraph:
@@ -27,12 +28,6 @@ class DependencyGraph:
         # Keys are variable names, while values are lists of the actual VSs.
         # i.e. {"x": [(x, 1), (x, 2)], "y": [(y, 1), (y, 2), (y, 3)]}
         self.variable_snapshots = defaultdict(list)
-
-        # Input nodesets are the input VSs to OEs.
-        self.input_nodesets = []
-
-        # Input nodesets are the input VSs to OEs.
-        self.output_nodesets = []
 
     def create_variable_snapshot(self, variable_name: str, index: int, deleted: bool) -> VariableSnapshot:
         """
@@ -53,31 +48,30 @@ class DependencyGraph:
         # Create a new VS instance and store it in the graph.
         vs = VariableSnapshot(variable_name, version, index, deleted)
         self.variable_snapshots[variable_name].append(vs)
-
         return vs
 
-    def add_operation_event(self, cell, cell_runtime: float, start_time: float, src: NodeSet, dst: NodeSet):
+    def add_cell_execution(self, cell, cell_runtime: float, start_time: float, src_vss: List, dst_vss: List):
         """
-            Create an operation event from cell execution metrics.
+            Create a cell execution from cell execution metrics.
             Args:
                 cell (str): Raw cell cell.
                 cell_runtime (float): Cell runtime.
                 start_time (time): Time of start of cell execution. Note that this is different from when the cell was
                     queued.
                 src (Nodeset): Nodeset containing input VSs of the cell execution.
-                dst(NodeSet): Nodeset containing output VSs of the cell execution.
+                dst (NodeSet): Nodeset containing output VSs of the cell execution.
         """
 
-        # Create an operation event.
-        oe = OperationEvent(len(self.operation_events), cell, cell_runtime, start_time, src, dst)
+        # Create a cell execution.
+        oe = CellExecution(len(self.operation_events), cell, cell_runtime, start_time, src_vss, dst_vss)
 
-        # Add the newly created OE to the graph.
+        # Add the newly created cell execution to the graph.
         self.operation_events.append(oe)
 
-        # Set the newly added OE as the adjacent OE of its input and output nodesets.
-        src.operation_event = oe
-        dst.operation_event = oe
+        # Set the newly created cell execution as dependent on its input variable snapshots.
+        for src_vs in src_vss:
+            src_vs.input_ces.append(oe)
 
-        # Add the input and output nodesets to the graph.
-        self.input_nodesets.append(src)
-        self.output_nodesets.append(dst)
+        # Set the newly created cell execution as the parent of its output variable snapshots.
+        for dst_vs in dst_vss:
+            dst_vs.output_ce = oe

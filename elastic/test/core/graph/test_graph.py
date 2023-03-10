@@ -33,7 +33,7 @@ class TestGraph(unittest.TestCase):
     def test_add_operation_event(self):
         src = get_test_input_nodeset([])
         dst = get_test_output_nodeset([])
-        self.graph.add_operation_event("", 1, 1, src, dst)
+        self.graph.add_cell_execution("", 1, 1, src, dst)
 
         # OE and nodesets are stored in the graph correctly
         self.assertEqual(1, len(self.graph.operation_events))

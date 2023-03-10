@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys, traceback
 import time
+import dill
 from os.path import dirname
 
 from IPython import get_ipython
@@ -9,10 +10,13 @@ from IPython.core.magic import (Magics, magics_class, cell_magic, line_magic)
 from elastic.algorithm.selector import OptimizerType
 
 from elastic.core.common.profile_migration_speed import profile_migration_speed
+from elastic.core.common.profile_graph_size import profile_graph_size
 from elastic.core.notebook.checkpoint import checkpoint
-from elastic.core.notebook.inspect import inspect
+# from elastic.core.notebook.inspect import inspect
 from elastic.core.notebook.update_graph import update_graph
-from elastic.core.notebook.find_input_output_vars import find_input_output_vars
+from elastic.core.notebook.find_input_vars import find_input_vars
+from elastic.core.notebook.find_output_vars import find_created_deleted_vars
+from elastic.core.mutation.fingerprint import construct_fingerprint, compare_fingerprint
 from elastic.core.notebook.restore_notebook import restore_notebook
 
 from elastic.core.graph.graph import DependencyGraph
@@ -20,6 +24,8 @@ from elastic.core.io.recover import resume
 
 from elastic.algorithm.optimizer_exact import OptimizerExact
 from elastic.algorithm.optimizer_greedy import OptimizerGreedy
+from elastic.algorithm.optimizer_heuristic import OptimizerHeuristic
+from elastic.algorithm.optimizer_greedy_simple import OptimizerGreedySimple
 from elastic.algorithm.baseline import RandomBaseline, RecomputeAllBaseline, MigrateAllBaseline
 
 
@@ -39,7 +45,14 @@ class ElasticNotebook(Magics):
 
         # Migration properties.
         self.migration_speed_bps = 100000
+        self.alpha = 1
         self.selector = OptimizerExact(migration_speed_bps=self.migration_speed_bps)
+
+        # Dictionary of object fingerprints. For detecting modified references.
+        self.fingerprint_dict = {}
+
+        # Dictionary of value identifiers. For detecting modified object values.
+        self.value_identifier_dict = {}
 
         # Flag if migration speed has been manually set. In this case, skip profiling of migration speed at checkpoint
         # time.
@@ -52,6 +65,10 @@ class ElasticNotebook(Magics):
         self.optimizer_name = ""
         self.notebook_name = ""
 
+        # Total elapsed time spent inferring cell inputs and outputs.
+        # For measuring overhead.
+        self.total_recordevent_time = 0
+
     @cell_magic
     def RecordEvent(self, line, cell):
         """
@@ -60,6 +77,10 @@ class ElasticNotebook(Magics):
                 line: unused.
                 cell: cell content.
         """
+        pre_execution = set(self.shell.user_ns.keys())
+
+        # Find input variables (variables potentially accessed) of the cell.
+        input_variables = find_input_vars(cell, set(self.dependency_graph.variable_snapshots.keys()))
 
         # Run the cell.
         start_time = time.time()
@@ -71,24 +92,46 @@ class ElasticNotebook(Magics):
             _, _, tb = sys.exc_info()
             traceback_list = traceback.extract_tb(tb).format()
         cell_runtime = time.time() - start_time
+        post_execution = set(self.shell.user_ns.keys())
+        infer_start = time.time()
 
-        # Find input and output variables of the cell.
-        input_variables, output_variables = find_input_output_vars(
-            cell, set(self.dependency_graph.variable_snapshots.keys()), self.shell, traceback_list)
+        modified_variables = set()
+        for k, v in self.fingerprint_dict.items():
+            # Deleted variable
+            if k not in self.shell.user_ns:
+                del self.fingerprint_dict[k]
+                continue
+
+            changed, new_fingerprint = compare_fingerprint(self.fingerprint_dict[k], self.shell.user_ns[k])
+            if changed:
+                self.fingerprint_dict[k] = new_fingerprint
+                modified_variables.add(k)
+
+        # Find created and deleted variables.
+        created_variables, deleted_variables = find_created_deleted_vars(pre_execution, post_execution)
+
+        # Create id trees for output variables
+        for var in created_variables:
+            self.fingerprint_dict[var] = construct_fingerprint(self.shell.user_ns[var])
 
         # Update the dependency graph.
-        update_graph(cell, cell_runtime, start_time, input_variables, output_variables, self.dependency_graph)
-
-    # Inspect the current state of the graph.
-    @line_magic
-    def Inspect(self, line=''):
-        """
-            %Inspect: Inspect the current notebook state. Displays a graph representation of the notebook with NetworkX.
-            Args:
-                line: unused.
-        """
-
-        inspect(self.dependency_graph)
+        update_graph(cell, cell_runtime, start_time, input_variables, created_variables.union(modified_variables),
+                     deleted_variables, self.dependency_graph)
+        
+        # Update total recordevent time tally.
+        infer_end = time.time()
+        self.total_recordevent_time += infer_end - infer_start
+    #
+    # # Inspect the current state of the graph.
+    # @line_magic
+    # def Inspect(self, line=''):
+    #     """
+    #         %Inspect: Inspect the current notebook state. Displays a graph representation of the notebook with NetworkX.
+    #         Args:
+    #             line: unused.
+    #     """
+    #
+    #     inspect(self.dependency_graph)
 
     @line_magic
     def SetMigrationSpeed(self, migration_speed=''):
@@ -121,8 +164,19 @@ class ElasticNotebook(Magics):
         
         if optimizer == OptimizerType.EXACT.value:
             self.selector = OptimizerExact(self.migration_speed_bps)
+            self.alpha = 1
+        elif optimizer == OptimizerType.EXACT_C.value:
+            self.selector = OptimizerExact(self.migration_speed_bps)
+            self.alpha = 20
+        elif optimizer == OptimizerType.EXACT_R.value:
+            self.selector = OptimizerExact(self.migration_speed_bps)
+            self.alpha = 0.05
         elif optimizer == OptimizerType.GREEDY.value:
             self.selector = OptimizerGreedy(self.migration_speed_bps)
+        elif optimizer == OptimizerType.HEURISTIC.value:
+            self.selector = OptimizerHeuristic(self.migration_speed_bps)
+        elif optimizer == OptimizerType.GREEDY_SIMPLE.value:
+            self.selector = OptimizerGreedySimple(self.migration_speed_bps)
         elif optimizer == OptimizerType.RANDOM.value:
             self.selector = RandomBaseline(self.migration_speed_bps)
         elif optimizer == OptimizerType.MIGRATE_ALL.value:
@@ -151,14 +205,23 @@ class ElasticNotebook(Magics):
             Args:
                 filename: File to write checkpoint to. If empty, writes to a default location (see io/migrate.py).
         """
-        # Profile the migration speed to filename.
-        if not self.manual_migration_speed:
-            self.migration_speed_bps = profile_migration_speed(dirname(filename))
-            self.selector.migration_speed_bps = self.migration_speed_bps
+        # Write overhead metrics to file (for experiments).
+        if self.write_log_location:
+            with open(self.write_log_location + '/output_' + self.notebook_name + '_' + self.optimizer_name + '.txt', 'a') as f:
+                f.write('Dependency graph storage overhead - ' + repr(profile_graph_size(self.dependency_graph)) + " bytes" + '\n')
+                f.write('Cell monitoring overhead - ' + repr(self.total_recordevent_time) + " seconds" + '\n')
+        
+        print("monitor overhead:", self.total_recordevent_time)
+        print("storage overhead:", profile_graph_size(self.dependency_graph))
 
+        ## Profile the migration speed to filename.
+        if not self.manual_migration_speed:
+            self.migration_speed_bps = profile_migration_speed(dirname(filename), alpha = self.alpha)
+            self.selector.migration_speed_bps = self.migration_speed_bps
+        
         # Checkpoint the notebook.
-        checkpoint(self.dependency_graph, self.shell, self.selector, filename, self.write_log_location,
-                   self.notebook_name, self.optimizer_name)
+        checkpoint(self.dependency_graph, self.shell, self.fingerprint_dict, self.selector, filename,
+                   self.write_log_location, self.notebook_name, self.optimizer_name)
 
     @line_magic
     def LoadCheckpoint(self, filename=''):
@@ -171,7 +234,7 @@ class ElasticNotebook(Magics):
             resume(filename, self.write_log_location, self.notebook_name, self.optimizer_name)
 
         # Recompute missing VSs and redeclare variables into the kernel.
-        restore_notebook(self.dependency_graph, self.shell, variables, oes_to_recompute,
+        restore_notebook(self.dependency_graph, self.shell, self.fingerprint_dict, variables, oes_to_recompute,
                          self.write_log_location, self.notebook_name, self.optimizer_name)
 
 

@@ -9,8 +9,8 @@ from elastic.core.graph.graph import DependencyGraph
 from elastic.core.graph.node_set import NodeSet, NodeSetType
 
 
-def update_graph(cell: str, cell_runtime: float, start_time: float, input_variables: set, output_variables: dict,
-                 graph: DependencyGraph):
+def update_graph(cell: str, cell_runtime: float, start_time: float, input_variables: set,
+                 created_and_modified_variables: set, deleted_variables: set, graph: DependencyGraph):
     """
         Updates the graph according to the newly executed cell and its input and output variables.
         Args:
@@ -19,21 +19,17 @@ def update_graph(cell: str, cell_runtime: float, start_time: float, input_variab
              start_time (time): Time of start of cell execution. Note that this is different from when the cell was
                  queued.
              input_variables (set): Set of input variables of the cell.
-             output_variables (Dict): Dict of output variables. Keys are variables and values are 2-item lists
-                 representing (order the variables were accessed / created in this cell,
-                 variable is deleted at end of cell execution.)
+             created_and_modified_variables (set): set of created and modified variables.
+             deleted_variables (set): set of deleted variables
              graph (DependencyGraph): Dependency graph representation of the notebook.
     """
 
     # Retrieve input variable snapshots
-    input_vss = [graph.variable_snapshots[variable][-1] for variable in input_variables]
+    input_vss = set(graph.variable_snapshots[variable][-1] for variable in input_variables)
 
     # Create output variable snapshots
-    output_vss = [graph.create_variable_snapshot(k, v[0], v[1]) for k, v in output_variables.items()]
-
-    # Create nodesets for input and output variables snapshots
-    input_nodeset = NodeSet(input_vss, NodeSetType.INPUT)
-    output_nodeset = NodeSet(output_vss, NodeSetType.OUTPUT)
+    output_vss_create = set(graph.create_variable_snapshot(k, 0, False) for k in created_and_modified_variables)
+    output_vss_delete = set(graph.create_variable_snapshot(k, 0, True) for k in deleted_variables)
 
     # Add the newly created OE to the graph.
-    graph.add_operation_event(cell, cell_runtime, start_time, input_nodeset, output_nodeset)
+    graph.add_cell_execution(cell, cell_runtime, start_time, input_vss, output_vss_create.union(output_vss_delete))

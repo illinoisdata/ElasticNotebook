@@ -29,9 +29,9 @@ def resume(filename: str, write_log_location=None, notebook_name=None, optimizer
 
     load_start = time.time()
     if filename:
-        metadata = dill.loads(adapter.read_all(Path(filename)))
+        metadata = adapter.read_all(Path(filename))
     else:
-        metadata = dill.loads(adapter.read_all(Path(FILENAME)))
+        metadata = adapter.read_all(Path(FILENAME))
     load_end = time.time()
 
     if write_log_location:

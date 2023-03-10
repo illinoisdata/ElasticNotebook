@@ -26,16 +26,16 @@ class VariableSnapshot:
 
         # Whether this VS corresponds to a deleted variable.
         # i.e. if this VS was created for 'del x' we set this to true so this variable is explicitly not considered
-        # for common.
+        # for migration.
         self.deleted = deleted
 
-        # Output nodeset in the dependency graph containing this variable snapshot.
-        self.output_nodeset = None
+        # Cell executions accessing this variable snapshot (i.e. require this variable snapshot to run).
+        self.input_ces = []
 
-        # Input nodesets in the dependency graph containing this variable snapshot.
-        self.input_nodesets = []
+        # The unique cell execution creating this variable snapshot.
+        self.output_ce = None
 
-        # Size of variable pointed to by VS; estimated at common time.
+        # Size of variable pointed to by VS; estimated at migration time.
         self.size = 0
 
 

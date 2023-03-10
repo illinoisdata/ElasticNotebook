@@ -4,7 +4,7 @@
 # Copyright 2021-2022 University of Illinois
 
 from typing import List
-from elastic.core.graph.operation_event import OperationEvent
+from elastic.core.graph.cell_execution import CellExecution
 from elastic.core.graph.node_set import NodeSetType
 
 

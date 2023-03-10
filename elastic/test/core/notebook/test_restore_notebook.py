@@ -20,8 +20,8 @@ class TestRestoreNotebook(unittest.TestCase):
         self.graph = DependencyGraph()
         self.vs1 = self.graph.create_variable_snapshot("x", 0, False)
         self.vs2 = self.graph.create_variable_snapshot("y", 0, False)
-        self.graph.add_operation_event("x = 1\ny = 2", 1, 1, get_test_input_nodeset([]),
-                                       get_test_output_nodeset([self.vs1, self.vs2]))
+        self.graph.add_cell_execution("x = 1\ny = 2", 1, 1, get_test_input_nodeset([]),
+                                      get_test_output_nodeset([self.vs1, self.vs2]))
 
     def test_restore_notebook_redeclare(self):
         """

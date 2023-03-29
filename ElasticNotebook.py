@@ -91,7 +91,6 @@ class ElasticNotebook(Magics):
 
         # Find input variables (variables potentially accessed) of the cell.
         input_variables, function_defs = find_input_vars(cell, set(self.dependency_graph.variable_snapshots.keys()), self.shell, self.dependency_graph.udfs)
-
         # Union of ID graphs of input variables. For detecting modifications to unserializable variables.
         input_variables_id_graph_union = set()
         for var in input_variables:
@@ -124,8 +123,8 @@ class ElasticNotebook(Magics):
             changed, overwritten = compare_fingerprint(self.fingerprint_dict[k], self.shell.user_ns[k], self.profile_dict, input_variables_id_graph_union)
             if changed:
                 modified_variables.add(k)
-            if not overwritten:
-                input_variables.add(k)
+                if not overwritten:
+                    input_variables.add(k)
             
             # A user defined function has been overwritten
             elif overwritten and k in self.dependency_graph.udfs:

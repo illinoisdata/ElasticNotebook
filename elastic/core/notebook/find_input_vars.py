@@ -74,6 +74,7 @@ def find_input_vars(cell: str, existing_variables: set, shell: ZMQInteractiveShe
     v1.visit(instructions)
 
     input_variables = input_variables.union(v1.loads)
+    print("top level inputs:", input_variables)
     function_defs = function_defs.union(v1.functiondefs)
     for udf in v1.udfcalls:
         if udf not in udf_calls_visited and udf in shell_udfs:

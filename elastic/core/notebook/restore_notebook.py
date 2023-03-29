@@ -8,12 +8,12 @@ from IPython import get_ipython
 from IPython.utils.capture import capture_output
 from ipykernel.zmqshell import ZMQInteractiveShell
 
-from core.mutation.fingerprint import construct_fingerprint
+from elastic.core.mutation.fingerprint import construct_fingerprint
 from elastic.core.graph.graph import DependencyGraph
 
 
 def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_dict: dict,
-                     variables: dict, oes_to_recompute: set, write_log_location=None, notebook_name=None,
+                     variables: dict, oes_to_recompute: set, profile_dict, write_log_location=None, notebook_name=None,
                      optimizer_name=None):
     """
         Restores the notebook. Declares variables back into the kernel and recomputes the OEs to restore non-migrated
@@ -41,22 +41,16 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerp
                     get_ipython().run_cell(oe.cell)
             except Exception as e:
                 raise e
-        else:
-            # Define output variables in the OE in the order they were defined.
-            # i.e. x = 1, y = 2, then we define x followed by y.
-            for pair in sorted(variables[oe], key=lambda item: item[0].index):
-                print("Declaring variable", pair[0].name)
-                shell.user_ns[pair[0].name] = pair[1]
-
-    # Recompute variable fingerprints.
-    for k, v in graph.variable_snapshots.items():
-        if not v[-1].deleted:
-            fingerprint_dict[k] = construct_fingerprint(shell.user_ns[k])
-
+        
+        # Define output variables in the OE in the order they were defined.
+        # i.e. x = 1, y = 2, then we define x followed by y.
+        for pair in sorted(variables[oe], key=lambda item: item[0].index):
+            print("Declaring variable", pair[0].name)
+            shell.user_ns[pair[0].name] = pair[1]
+    
     recompute_end = time.time()
+
     if write_log_location:
         with open(write_log_location + '/output_' + notebook_name + '_' + optimizer_name + '.txt', 'a') as f:
             f.write('Recompute stage took - ' + repr(recompute_end - recompute_start) + " seconds" + '\n')
-
-
 

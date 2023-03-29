@@ -15,11 +15,11 @@ from elastic.core.common.profile_variable_size import profile_variable_size
 from elastic.core.io.pickle import is_picklable, is_picklable_fast
 from ipykernel.zmqshell import ZMQInteractiveShell
 
-from elastic.core.mutation.object_representation import DataframeObj, UnserializableObj
+from elastic.core.mutation.object_representation import DataframeObj, UnserializableObj, NpArrayObj
 
 
 def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_dict: Dict,
-               selector: Selector, filename: str, write_log_location=None, notebook_name=None, optimizer_name=None):
+               selector: Selector, filename: str, profile_dict, write_log_location=None, notebook_name=None, optimizer_name=None):
     """
         Checkpoints the notebook. The optimizer selects the VSs to migrate and recompute and the OEs to recompute, then
         writes the checkpoint as the specified filename.
@@ -47,13 +47,9 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
         if isinstance(fingerprint_dict[active_vs.name][2], UnserializableObj):
             active_vs.size = np.inf
 
-        # Object is a dataframe; we need to reestimate its size.
-        elif isinstance(fingerprint_dict[active_vs.name][2], DataframeObj):
-            active_vs.size = profile_variable_size(shell.user_ns[active_vs.name])
-
-        # Size of object can be directly retrieved as size of the object representation.
+        # Profile size of object.
         else:
-            active_vs.size = sys.getsizeof(fingerprint_dict[active_vs.name][2])
+            active_vs.size = profile_variable_size(shell.user_ns[active_vs.name])
 
     # Check for pairwise variable intersections. Variables sharing underlying data must be migrated or recomputed
     # together.
@@ -68,6 +64,8 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
     if write_log_location:
         with open(write_log_location + '/output_' + notebook_name + '_' + optimizer_name + '.txt', 'a') as f:
             f.write('Profile stage took - ' + repr(profile_start - profile_end) + " seconds" + '\n')
+            f.write('Idgraph stage took - ' + repr(profile_dict["idgraph"]) + " seconds" + '\n')
+            f.write('Representation stage took - ' + repr(profile_dict["representation"]) + " seconds" + '\n')
     
     optimize_start = time.time()
     # Initialize the optimizer.

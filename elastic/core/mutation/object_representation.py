@@ -1,12 +1,16 @@
 import mmap
 from inspect import isclass
 from types import GeneratorType
+from types import ModuleType
 
 import dill
 import pandas as pd
-# import polars as pl
-# import lightgbm
-
+import polars as pl
+import lightgbm
+import numpy as np
+import scipy
+import torch
+import copy
 
 # Object representing none.
 class NoneObj:
@@ -26,19 +30,64 @@ class DataframeObj:
     def __eq__(self, other):
         if isinstance(other, DataframeObj):
             return True
+        return False
+
+class NpArrayObj:
+    def __init__(self, array):
+        self.array = array
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, NpArrayObj):
+            try:
+                return np.array_equal(self.array, other.array, equal_nan=True)
+            except:
+                return np.array_equal(self.array, other.array)
+        return False
+
+class ScipyArrayObj:
+    def __init__(self, array):
+        self.array = array
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, ScipyArrayObj):
+            if self.array.shape != other.array.shape:
+                return False
+            return (self.array != other.array).nnz==0
+        return False
+
+class TorchTensorObj:
+    def __init__(self, array):
+        self.array = array
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, TorchTensorObj):
+            return torch.equal(self.array, other.array)
+        return False
+
+class ModuleObj:
+    def __init__(self):
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, ModuleObj):
+            return True
+        return False
 
 # Object representing general unserializable class.
 class UnserializableObj:
-    def __init__(self, representation):
-        self.representation = representation
+    def __init__(self):
+        pass
 
     def __eq__(self, other):
         if isinstance(other, UnserializableObj):
-            return self.representation == other.representation
+            return True
         return False
 
 
-def construct_object_representation(obj):
+def construct_object_representation(obj, deepcopy=False):
     """
         Construct a representation for the object.
     """
@@ -60,23 +109,40 @@ def construct_object_representation(obj):
         obj.__array__().flags.writeable = False
         return DataframeObj()
 
-    # # Polars dataframes are immutable.
-    # if isinstance(obj, pl.DataFrame):
-    #     return type(obj)
+    if isinstance(obj, np.ndarray):
+        if deepcopy:
+            return NpArrayObj(copy.deepcopy(obj))
+        else:
+            return NpArrayObj(obj)
 
-    # # LightGBM dataframes are immutable.
-    # if isinstance(obj, lightgbm.Dataset):
-    #     return type(obj)
+    if isinstance(obj, scipy.sparse.csr_matrix):
+        if deepcopy:
+            return ScipyArrayObj(copy.deepcopy(obj))
+        else:
+            return NpArrayObj(obj)
 
-    # # TODO: LookForward hack for generators
-    # elif isinstance(obj, tf.random.Generator):
+    if isinstance(obj, torch.Tensor):
+        if deepcopy:
+            return TorchTensorObj(copy.deepcopy(obj))
+        else:
+            return TorchTensorObj(obj)
 
-    # Since mmaps are unserializable, we use its pointer position to check whether it has been mutated.
-    if isinstance(obj, mmap.mmap):
-        return UnserializableObj(mmap.tell())
+    if isinstance(obj, ModuleType):
+        return ModuleObj()
+
+    # Polars dataframes are immutable.
+    if isinstance(obj, pl.DataFrame):
+        return type(obj)
+
+    # LightGBM dataframes are immutable.
+    if isinstance(obj, lightgbm.Dataset):
+        return type(obj)
 
     # Try to serialize the object
     try:
-        return dill.dumps(obj)
+        if deepcopy:
+            return copy.deepcopy(obj)
+        else:
+            return obj
     except:
-        return UnserializableObj(NoneObj())
+        return UnserializableObj()

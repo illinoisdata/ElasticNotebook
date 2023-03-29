@@ -29,6 +29,9 @@ class DependencyGraph:
         # i.e. {"x": [(x, 1), (x, 2)], "y": [(y, 1), (y, 2), (y, 3)]}
         self.variable_snapshots = defaultdict(list)
 
+        # A subset of variables which are user-defined functions (UDFs).
+        self.udfs = set()
+
     def create_variable_snapshot(self, variable_name: str, index: int, deleted: bool) -> VariableSnapshot:
         """
             Creates a new variable snapshot for a given variable.

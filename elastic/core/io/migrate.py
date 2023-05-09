@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 from collections import defaultdict
 
 from pathlib import Path
@@ -18,7 +14,7 @@ FILENAME = "./notebook.pickle"
 
 
 def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: set, vss_to_recompute: set,
-            oes_to_recompute: set, filename: str):
+            ces_to_recompute: set, udfs, filename: str):
     """
         Writes the graph representation of the notebook, migrated variables, and instructions for recomputation as the
         specified file.
@@ -28,8 +24,9 @@ def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: 
             shell (ZMQInteractiveShell): interactive Jupyter shell storing the state of the current session.
             vss_to_migrate (set): set of VSs to migrate.
             vss_to_recompute (set): set of VSs to recompute.
-            oes_to_recompute (set): set of OEs to recompute post-migration.
+            ces_to_recompute (set): set of CEs to recompute post-migration.
             filename (str): the location to write the checkpoint to.
+            udfs (set): set of user-declared functions.
     """
     # Retrieve variables
     variables = defaultdict(list)
@@ -43,11 +40,12 @@ def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: 
 
     # Construct checkpoint JSON.
     adapter = FilesystemAdapter()
-    metadata = CheckpointFile().with_dependency_graph(graph)\
-               .with_variables(variables)\
-               .with_vss_to_migrate(vss_to_migrate)\
-               .with_vss_to_recompute(vss_to_recompute)\
-               .with_oes_to_recompute(oes_to_recompute)
+    metadata = CheckpointFile().with_dependency_graph(graph) \
+        .with_variables(variables) \
+        .with_vss_to_migrate(vss_to_migrate) \
+        .with_vss_to_recompute(vss_to_recompute) \
+        .with_ces_to_recompute(ces_to_recompute) \
+        .with_udfs(udfs)
 
     # Write the JSON file to the specified location. Uses the default location if a file path isn't specified.
     if filename:

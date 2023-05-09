@@ -28,7 +28,7 @@ class TestRestoreNotebook(unittest.TestCase):
             Test redeclaring variables works as expected.
         """
         # Redeclare x and y into the kernel.
-        oe = self.graph.operation_events[0]
+        oe = self.graph.cell_executions[0]
         restore_notebook(self.graph, self.shell, {oe: [(self.vs1, 1), (self.vs2, 2)]}, set())
 
         # Assert that x and y are correctly redeclared.
@@ -42,7 +42,7 @@ class TestRestoreNotebook(unittest.TestCase):
         shell = TerminalInteractiveShell.instance()
 
         # Recompute the OE to recompute x and y.
-        oe = self.graph.operation_events[0]
+        oe = self.graph.cell_executions[0]
         restore_notebook(self.graph, shell, {}, {oe})
 
         # Assert that x and y are correctly redeclared.

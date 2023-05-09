@@ -32,7 +32,7 @@ class TestMigrateRecover(unittest.TestCase):
 
         vss_to_migrate = {vs1}
         vss_to_recompute = {vs2}
-        oes_to_migrate = {graph.operation_events[0]}
+        oes_to_migrate = {graph.cell_executions[0]}
 
         # Migrate the singular variable.
         migrate(graph, shell, vss_to_migrate, vss_to_recompute, oes_to_migrate, TEST_FILE_PATH)
@@ -42,9 +42,9 @@ class TestMigrateRecover(unittest.TestCase):
         graph2, variables, vss_to_migrate2, vss_to_recompute2, oes_to_recompute2 = resume(TEST_FILE_PATH)
 
         # Variable 'x' should be successfully migrated.
-        self.assertEqual(1, len(variables[graph2.operation_events[0]]))
-        self.assertEqual("x", variables[graph2.operation_events[0]][0][0].name)
-        self.assertEqual(1, variables[graph2.operation_events[0]][0][1])
+        self.assertEqual(1, len(variables[graph2.cell_executions[0]]))
+        self.assertEqual("x", variables[graph2.cell_executions[0]][0][0].name)
+        self.assertEqual(1, variables[graph2.cell_executions[0]][0][1])
 
         # Recomputation instructions should be successfully migrated.
         self.assertEqual("x", next(iter(vss_to_migrate2)).name)

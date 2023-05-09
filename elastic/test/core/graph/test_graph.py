@@ -36,13 +36,13 @@ class TestGraph(unittest.TestCase):
         self.graph.add_cell_execution("", 1, 1, src, dst)
 
         # OE and nodesets are stored in the graph correctly
-        self.assertEqual(1, len(self.graph.operation_events))
+        self.assertEqual(1, len(self.graph.cell_executions))
         self.assertEqual(1, len(self.graph.input_nodesets))
         self.assertEqual(1, len(self.graph.output_nodesets))
 
         # Newly create OE correctly set as adjacent OE of input and output nodesets
-        self.assertTrue(src.operation_event == self.graph.operation_events[0])
-        self.assertTrue(dst.operation_event == self.graph.operation_events[0])
+        self.assertTrue(src.operation_event == self.graph.cell_executions[0])
+        self.assertTrue(dst.operation_event == self.graph.cell_executions[0])
 
 
 if __name__ == '__main__':

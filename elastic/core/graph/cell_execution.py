@@ -19,7 +19,7 @@ class CellExecution:
                 start_time (time): Time of start of cell execution. Note that this is different from when the cell was
                     queued.
                 src_vss (List[VariableSnapshot]): Nodeset containing input VSs of the cell execution.
-                dst_vss(List[VariableSnapshot]): Nodeset containing output VSs of the cell execution.
+                dst_vss (List[VariableSnapshot]): Nodeset containing output VSs of the cell execution.
         """
         self.cell_num = cell_num
         self.cell = cell

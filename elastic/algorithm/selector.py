@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
-
-from typing import List
-from elastic.core.graph.variable_snapshot import VariableSnapshot
-
 from enum import Enum
 
 
@@ -16,12 +8,8 @@ class OptimizerType(Enum):
     EXACT = "exact"
     EXACT_C = "exact_c"
     EXACT_R = "exact_r"
-    GREEDY = "greedy"
-    RANDOM = "random"
     MIGRATE_ALL = "migrate_all"
     RECOMPUTE_ALL = "recompute_all"
-    HEURISTIC = "heuristic"
-    GREEDY_SIMPLE = "greedy_simple"
 
 
 class Selector:

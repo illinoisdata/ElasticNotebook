@@ -4,7 +4,6 @@
 # Copyright 2021-2022 University of Illinois
 import time
 from pathlib import Path
-import dill
 
 from elastic.core.io.filesystem_adapter import FilesystemAdapter
 
@@ -39,4 +38,4 @@ def resume(filename: str, write_log_location=None, notebook_name=None, optimizer
             f.write('Reload stage took - ' + repr(load_end - load_start) + " seconds\n")
 
     return metadata.get_dependency_graph(), metadata.get_variables(), metadata.get_vss_to_migrate(), \
-        metadata.get_vss_to_recompute(), metadata.get_oes_to_recompute()
+        metadata.get_vss_to_recompute(), metadata.get_ces_to_recompute(), metadata.get_udfs()

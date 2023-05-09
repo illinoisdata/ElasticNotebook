@@ -1,17 +1,13 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
-
 import json
-from typing import List, Dict
+from typing import Dict
 from elastic.core.graph.graph import DependencyGraph
 
 KEY_DEPENDENCY_GRAPH = "dependencyGraph"
 KEY_VARIABLES = "variables"
 KEY_VSS_TO_MIGRATE = "vss_to_migrate"
 KEY_VSS_TO_RECOMPUTE = "vss_to_recompute"
-KEY_OES_TO_RECOMPUTE = "oes_to_recompute"
+KEY_CES_TO_RECOMPUTE = "ces_to_recompute"
+KEY_UDFS = "udfs"
 
 
 class CheckpointFile:
@@ -31,8 +27,11 @@ class CheckpointFile:
         # Variables to recompute post-migration.
         self.vss_to_recompute = None
 
-        # OEs to recompute to restore non-migrated variables (vss_to_recompute).
-        self.oes_to_recompute = None
+        # CEs to recompute to restore non-migrated variables (vss_to_recompute).
+        self.ces_to_recompute = None
+
+        # User-declared functions in the session.
+        self.udfs = None
 
     def with_dependency_graph(self, graph: DependencyGraph):
         self.dependency_graph = graph
@@ -62,12 +61,19 @@ class CheckpointFile:
     def get_vss_to_recompute(self):
         return self.vss_to_recompute
 
-    def with_oes_to_recompute(self, oes_to_recompute: set):
-        self.oes_to_recompute = oes_to_recompute
+    def with_ces_to_recompute(self, ces_to_recompute: set):
+        self.ces_to_recompute = ces_to_recompute
         return self
 
-    def get_oes_to_recompute(self):
-        return self.oes_to_recompute
+    def get_ces_to_recompute(self):
+        return self.ces_to_recompute
+
+    def with_udfs(self, udfs: set):
+        self.udfs = udfs
+        return self
+
+    def get_udfs(self):
+        return self.udfs
 
     def to_json_str(self) -> str:
         return json.dumps({
@@ -75,7 +81,8 @@ class CheckpointFile:
             KEY_VARIABLES: self.variables,
             KEY_VSS_TO_MIGRATE: self.vss_to_migrate,
             KEY_VSS_TO_RECOMPUTE: self.vss_to_recompute,
-            KEY_OES_TO_RECOMPUTE: self.oes_to_recompute
+            KEY_CES_TO_RECOMPUTE: self.ces_to_recompute,
+            KEY_UDFS: self.udfs
         })
 
     @staticmethod
@@ -84,4 +91,5 @@ class CheckpointFile:
                                   .with_variables(kv[KEY_VARIABLES])\
                                   .with_vss_to_migrate(kv[KEY_VSS_TO_MIGRATE])\
                                   .with_vss_to_recompute(kv[KEY_VSS_TO_RECOMPUTE])\
-                                  .with_oes_to_recompute(kv[KEY_OES_TO_RECOMPUTE])
+                                  .with_ces_to_recompute(kv[KEY_CES_TO_RECOMPUTE])\
+                                  .with_udfs(kv[KEY_UDFS])

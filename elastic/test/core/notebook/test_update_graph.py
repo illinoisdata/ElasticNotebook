@@ -24,17 +24,17 @@ class TestUpdateGraph(unittest.TestCase):
         # Check elements have been added to the graph.
         self.assertEqual(1, len(graph.variable_snapshots["y"]))
         self.assertEqual(1, len(graph.variable_snapshots["z"]))
-        self.assertEqual(1, len(graph.operation_events))
+        self.assertEqual(1, len(graph.cell_executions))
         self.assertEqual(1, len(graph.input_nodesets))
         self.assertEqual(1, len(graph.output_nodesets))
 
         # Check fields are filled in correctly.
-        self.assertEqual(0, graph.operation_events[0].cell_num)
-        self.assertEqual("y = 1\nz = 1", graph.operation_events[0].cell)
-        self.assertEqual(1, graph.operation_events[0].cell_runtime)
-        self.assertEqual(1, graph.operation_events[0].start_time)
-        self.assertTrue(graph.input_nodesets[0] == graph.operation_events[0].src)
-        self.assertTrue(graph.output_nodesets[0] == graph.operation_events[0].dst)
+        self.assertEqual(0, graph.cell_executions[0].cell_num)
+        self.assertEqual("y = 1\nz = 1", graph.cell_executions[0].cell)
+        self.assertEqual(1, graph.cell_executions[0].cell_runtime)
+        self.assertEqual(1, graph.cell_executions[0].start_time)
+        self.assertTrue(graph.input_nodesets[0] == graph.cell_executions[0].src)
+        self.assertTrue(graph.output_nodesets[0] == graph.cell_executions[0].dst)
 
 
 if __name__ == '__main__':

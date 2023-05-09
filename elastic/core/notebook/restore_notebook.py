@@ -1,19 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 import time
 
 from IPython import get_ipython
 from IPython.utils.capture import capture_output
 from ipykernel.zmqshell import ZMQInteractiveShell
 
-from elastic.core.mutation.fingerprint import construct_fingerprint
 from elastic.core.graph.graph import DependencyGraph
 
 
-def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_dict: dict,
-                     variables: dict, oes_to_recompute: set, profile_dict, write_log_location=None, notebook_name=None,
+def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell,
+                     variables: dict, oes_to_recompute: set, write_log_location=None, notebook_name=None,
                      optimizer_name=None):
     """
         Restores the notebook. Declares variables back into the kernel and recomputes the OEs to restore non-migrated
@@ -21,7 +16,6 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerp
         Args:
             graph (DependencyGraph): dependency graph representation of the notebook.
             shell (ZMQInteractiveShell): interactive Jupyter shell storing the state of the current session.
-            fingerprint_dict (Dict): dict of variables to ther fingerprints.
             variables (Dict): Mapping from OEs to lists of variables defined in those OEs.
             oes_to_recompute (set): OEs to recompute to restore non-migrated variables.
             write_log_location (str): location to write component runtimes to. For experimentation only.
@@ -31,20 +25,19 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerp
 
     # Recompute OEs following the order they were executed in.
     recompute_start = time.time()
-    for oe in graph.operation_events:
-        if oe in oes_to_recompute:
+    for ce in graph.cell_executions:
+        if ce in oes_to_recompute:
             # Rerun cell code; suppress stdout when rerunning.
-            print("Rerunning cell", oe.cell_num + 1)
+            print("Rerunning cell", ce.cell_num + 1)
             cell_capture = capture_output(stdout=True, stderr=True, display=True)
             try:
                 with cell_capture:
-                    get_ipython().run_cell(oe.cell)
+                    get_ipython().run_cell(ce.cell)
             except Exception as e:
                 raise e
         
-        # Define output variables in the OE in the order they were defined.
-        # i.e. x = 1, y = 2, then we define x followed by y.
-        for pair in sorted(variables[oe], key=lambda item: item[0].index):
+        # Define output variables in the CE.
+        for pair in variables[ce]:
             print("Declaring variable", pair[0].name)
             shell.user_ns[pair[0].name] = pair[1]
     

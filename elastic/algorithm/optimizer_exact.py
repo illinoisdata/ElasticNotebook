@@ -1,17 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
-
 from elastic.algorithm.selector import Selector
 from elastic.core.graph.variable_snapshot import VariableSnapshot
 from elastic.core.graph.cell_execution import CellExecution
+
+from collections import defaultdict
 import networkx as nx
 from networkx.algorithms.flow import shortest_augmenting_path
 import numpy as np
-
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import maximum_flow
 
 
 class OptimizerExact(Selector):
@@ -27,8 +21,8 @@ class OptimizerExact(Selector):
         self.active_oes = None
         self.compute_graph = None
 
-        # OEs required to recompute a given OE.
-        self.recomputation_oes = {}
+        # CEs required to recompute a variables last modified by a given CE.
+        self.recomputation_ces = defaultdict(set)
 
         self.idx = 0
 
@@ -40,25 +34,28 @@ class OptimizerExact(Selector):
         self.idx += 1
         return idx
 
-    def dfs(self, current: str, visited: set, recompute_oes: str):
+    def dfs(self, current: str, visited: set, recompute_ces: str):
         """
-            DFS helper for finding the OEs required to recompute a node set.
+            Perform DFS on the Application History Graph for finding the CEs required to recompute a variable.
             Args:
                 current (str): Name of current nodeset.
                 visited (set): Visited nodesets.
-                recompute_oes (set): Set of OEs needing re-execution to recompute the cirremt nodeset.
+                recompute_ces (set): Set of CEs needing re-execution to recompute the current nodeset.
         """
         if isinstance(current, CellExecution):
-            if current in self.active_oes:
-                recompute_oes.update(self.recomputation_oes[current])
+            # Result is memoized
+            if current in self.recomputation_ces:
+                recompute_ces.update(self.recomputation_ces[current])
             else:
-                recompute_oes.add(current)
+                recompute_ces.add(current)
                 for vs in current.src_vss:
                     if vs not in self.active_vss and vs not in visited:
-                        self.dfs(vs, visited, recompute_oes)
+                        self.dfs(vs, visited, recompute_ces)
+
         elif isinstance(current, VariableSnapshot):
-            if current.output_ce not in recompute_oes:
-                self.dfs(current.output_ce, visited, recompute_oes)
+            visited.add(current)
+            if current.output_ce not in recompute_ces:
+                self.dfs(current.output_ce, visited, recompute_ces)
 
     def find_prerequisites(self):
         """
@@ -66,61 +63,50 @@ class OptimizerExact(Selector):
         """
         self.active_vss = set(self.active_vss)
 
-        self.active_oes = set()
-        for oe in self.dependency_graph.operation_events:
+        for oe in self.dependency_graph.cell_executions:
             if oe.dst_vss.intersection(self.active_vss):
-                self.recomputation_oes[oe] = set()
-                self.dfs(oe, set(), self.recomputation_oes[oe])
-                self.active_oes.add(oe)
+                self.dfs(oe, set(), self.recomputation_ces[oe])
 
-    def select_vss(self) -> set:
+    def select_vss(self, write_log_location=None, notebook_name=None, optimizer_name=None) -> set:
         self.find_prerequisites()
 
         # Construct flow graph for computing mincut
         mincut_graph = nx.DiGraph()
-        # mincut_graph = graph_tool.Graph()
-        # mincut_graph.edge_properties['cap'] = mincut_graph.new_edge_property('double')
-
-        # Find all active VSs and OEs.
-        all_oes = set().union(*[self.recomputation_oes[i] for i in self.active_oes])
 
         # Add source and sink to flow graph.
         mincut_graph.add_node("source")
         mincut_graph.add_node("sink")
-        # source = mincut_graph.add_vertex()
-        # sink = mincut_graph.add_vertex()
 
-        # Add all active VSs as nodes, connect them with the source with edge capacity equal to common cost.
+        # Add all active VSs as nodes, connect them with the source with edge capacity equal to migration cost.
         for active_vs in self.active_vss:
             mincut_graph.add_node(active_vs)
             mincut_graph.add_edge("source", active_vs, capacity=active_vs.size / self.migration_speed_bps)
 
-        # Add OEs outputting active VSs as nodes.
-        for oe in self.active_oes:
-            mincut_graph.add_node(oe)
-            mincut_graph.add_edge("source", oe, capacity=sum(
-                [active_node.size for active_node in oe.dst_vss]) / self.migration_speed_bps)
+        # Add all CEs as nodes, connect them with the sink with edge capacity equal to recomputation cost.
+        for ce in self.dependency_graph.cell_executions:
+            mincut_graph.add_node(ce)
+            mincut_graph.add_edge(ce, "sink", capacity=ce.cell_runtime)
 
-        # Add all OEs as nodes, connect them with the sink with edge capacity equal to recomputation cost.
-        for oe in all_oes:
-            mincut_graph.add_node(oe)
-            mincut_graph.add_edge(oe, "sink", capacity=oe.cell_runtime)
-
-        # Connect each OE with its output variables and its prerequisite OEs.
-        for oe in self.active_oes:
-            for active_vs in oe.dst_vss:
-                mincut_graph.add_edge(active_vs, oe, capacity=np.inf)
-            for prereq in self.recomputation_oes[oe]:
-                mincut_graph.add_edge(oe, prereq, capacity=np.inf)
+        # Connect each CE with its output variables and its prerequisite OEs.
+        for active_vs in self.active_vss:
+            for ce in self.recomputation_ces[active_vs.output_ce]:
+                mincut_graph.add_edge(active_vs, ce, capacity=np.inf)
 
         # Add constraints: overlapping variables must either be migrated or recomputed together.
         for vs_pair in self.overlapping_vss:
             mincut_graph.add_edge(vs_pair[0], vs_pair[1], capacity=np.inf)
             mincut_graph.add_edge(vs_pair[1], vs_pair[0], capacity=np.inf)
 
-        # Run min-cut.
-        cut_value, partition = nx.minimum_cut(mincut_graph, "source", "sink", flow_func=shortest_augmenting_path)
-        vss_to_migrate = set(partition[1]).intersection(self.active_vss)
-        oes_to_recompute = set(partition[0]).intersection(all_oes)
+        # Prune CEs which produce no active variables to speedup computation.
+        for ce in self.dependency_graph.cell_executions:
+            if mincut_graph.in_degree(ce) == 0:
+                mincut_graph.remove_node(ce)
 
-        return vss_to_migrate, oes_to_recompute
+        # Solve min-cut with Ford-Fulkerson.
+        cut_value, partition = nx.minimum_cut(mincut_graph, "source", "sink", flow_func=shortest_augmenting_path)
+
+        # Determine the replication plan from the partition.
+        vss_to_migrate = set(partition[1]).intersection(self.active_vss)
+        ces_to_recompute = set(partition[0]).intersection(self.dependency_graph.cell_executions)
+
+        return vss_to_migrate, ces_to_recompute

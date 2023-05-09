@@ -26,7 +26,7 @@ class TestOptimizerGreedy(unittest.TestCase):
         opt.active_vss = active_vss
 
         # Adjust problem so un-migrating x or y has net 0 gain on checkpointing cost.
-        graph.operation_events[0].cell_runtime = 1.9
+        graph.cell_executions[0].cell_runtime = 1.9
 
         # Tests that the greedy optimizer now correctly recomputes both x and y.
         vss_to_migrate = opt.select_vss()

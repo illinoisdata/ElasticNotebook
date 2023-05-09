@@ -1,6 +1,7 @@
-
-
 def find_created_deleted_vars(pre_execution, post_execution):
+    """
+        Find created and deleted variables through computing a difference of the user namespace pre and post execution.
+    """
     created_variables = set()
     deleted_variables = set()
 

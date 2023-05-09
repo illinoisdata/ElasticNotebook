@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
-
 from pathlib import Path
+
 
 class Adapter:
     def __init__(self):

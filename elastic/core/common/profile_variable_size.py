@@ -1,12 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 import sys
 import types
 
 
 def get_total_size(data):
+    """
+        Compute the estimated total size of a variable.
+    """
     def get_memory_size(obj, is_initialize, visited):
         # same memory space should be calculated only once
         obj_id = id(obj)

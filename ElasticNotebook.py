@@ -249,7 +249,7 @@ class ElasticNotebook(Magics):
         """
         self.dependency_graph, variables, vss_to_migrate, vss_to_recompute, oes_to_recompute, self.udfs = \
             resume(filename, self.write_log_location, self.notebook_name, self.optimizer_name)
-
+        
         # Recompute missing VSs and redeclare variables into the kernel.
         restore_notebook(self.dependency_graph, self.shell, variables, oes_to_recompute, self.write_log_location,
                          self.notebook_name, self.optimizer_name)

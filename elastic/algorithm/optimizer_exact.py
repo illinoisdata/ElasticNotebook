@@ -22,7 +22,7 @@ class OptimizerExact(Selector):
         self.compute_graph = None
 
         # CEs required to recompute a variables last modified by a given CE.
-        self.recomputation_ces = defaultdict(set)
+        self.recomputation_ces = {}
 
         self.idx = 0
 
@@ -63,9 +63,11 @@ class OptimizerExact(Selector):
         """
         self.active_vss = set(self.active_vss)
 
-        for oe in self.dependency_graph.cell_executions:
-            if oe.dst_vss.intersection(self.active_vss):
-                self.dfs(oe, set(), self.recomputation_ces[oe])
+        for ce in self.dependency_graph.cell_executions:
+            if ce.dst_vss.intersection(self.active_vss):
+                recompute_ces = set()
+                self.dfs(ce, set(), recompute_ces)
+                self.recomputation_ces[ce] = recompute_ces
 
     def select_vss(self, write_log_location=None, notebook_name=None, optimizer_name=None) -> set:
         self.find_prerequisites()
@@ -108,5 +110,5 @@ class OptimizerExact(Selector):
         # Determine the replication plan from the partition.
         vss_to_migrate = set(partition[1]).intersection(self.active_vss)
         ces_to_recompute = set(partition[0]).intersection(self.dependency_graph.cell_executions)
-
+         
         return vss_to_migrate, ces_to_recompute

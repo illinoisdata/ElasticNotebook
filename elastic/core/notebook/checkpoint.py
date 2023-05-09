@@ -77,7 +77,7 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
 
     # Use the optimizer to compute the checkpointing configuration.
     opt_start = time.time()
-    vss_to_migrate, oes_to_recompute = selector.select_vss(write_log_location, notebook_name, optimizer_name)
+    vss_to_migrate, ces_to_recompute = selector.select_vss(write_log_location, notebook_name, optimizer_name)
     opt_end = time.time()
     print("---------------------------")
     print("variables to migrate:")
@@ -96,9 +96,9 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
 
     print("---------------------------")
     print("cells to recompute:")
-    for oe in oes_to_recompute:
-        print(oe.cell_num, oe.cell_runtime)
-    print(sorted([oe.cell_num + 1 for oe in oes_to_recompute]))
+    for ce in ces_to_recompute:
+        print(ce.cell_num, ce.cell_runtime)
+    print(sorted([ce.cell_num + 1 for ce in ces_to_recompute]))
 
     optimize_end = time.time()
     if write_log_location:
@@ -111,7 +111,7 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
     # Store the notebook checkpoint to the specified location.
     migrate_start = time.time()
     migrate_success = True
-    migrate(graph, shell, vss_to_migrate, vss_to_recompute, oes_to_recompute, udfs, filename)
+    migrate(graph, shell, vss_to_migrate, vss_to_recompute, ces_to_recompute, udfs, filename)
     migrate_end = time.time()
 
     if write_log_location:

@@ -8,10 +8,10 @@ from elastic.core.graph.graph import DependencyGraph
 
 
 def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell,
-                     variables: dict, oes_to_recompute: set, write_log_location=None, notebook_name=None,
+                     variables: dict, ces_to_recompute: set, write_log_location=None, notebook_name=None,
                      optimizer_name=None):
     """
-        Restores the notebook. Declares variables back into the kernel and recomputes the OEs to restore non-migrated
+        Restores the notebook. Declares variables back into the kernel and recomputes the CEs to restore non-migrated
         variables.
         Args:
             graph (DependencyGraph): dependency graph representation of the notebook.
@@ -26,7 +26,7 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell,
     # Recompute OEs following the order they were executed in.
     recompute_start = time.time()
     for ce in graph.cell_executions:
-        if ce in oes_to_recompute:
+        if ce in ces_to_recompute:
             # Rerun cell code; suppress stdout when rerunning.
             print("Rerunning cell", ce.cell_num + 1)
             cell_capture = capture_output(stdout=True, stderr=True, display=True)

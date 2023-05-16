@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
-
 import unittest
 from elastic.core.graph.graph import DependencyGraph
-from elastic.test.test_utils import get_test_input_nodeset, get_test_output_nodeset
 
 
 class TestGraph(unittest.TestCase):
@@ -16,9 +10,9 @@ class TestGraph(unittest.TestCase):
         """
             Test graph correctly handles versioning of VSs with the same and different names.
         """
-        vs1 = self.graph.create_variable_snapshot("x", 1, False)
-        vs2 = self.graph.create_variable_snapshot("x", 1, False)
-        vs3 = self.graph.create_variable_snapshot("y", 1, False)
+        vs1 = self.graph.create_variable_snapshot("x", False)
+        vs2 = self.graph.create_variable_snapshot("x", False)
+        vs3 = self.graph.create_variable_snapshot("y", False)
 
         # VSs are versioned correcly
         self.assertEqual(0, vs1.version)
@@ -31,18 +25,17 @@ class TestGraph(unittest.TestCase):
         self.assertEqual(1, len(self.graph.variable_snapshots["y"]))
 
     def test_add_operation_event(self):
-        src = get_test_input_nodeset([])
-        dst = get_test_output_nodeset([])
-        self.graph.add_cell_execution("", 1, 1, src, dst)
+        vs1 = self.graph.create_variable_snapshot("x", False)
+        vs2 = self.graph.create_variable_snapshot("y", False)
 
-        # OE and nodesets are stored in the graph correctly
+        self.graph.add_cell_execution("", 1, 1, {vs1}, {vs2})
+
+        # CE is stored in the graph correctly
         self.assertEqual(1, len(self.graph.cell_executions))
-        self.assertEqual(1, len(self.graph.input_nodesets))
-        self.assertEqual(1, len(self.graph.output_nodesets))
 
-        # Newly create OE correctly set as adjacent OE of input and output nodesets
-        self.assertTrue(src.operation_event == self.graph.cell_executions[0])
-        self.assertTrue(dst.operation_event == self.graph.cell_executions[0])
+        # Newly create CE correctly set as adjacent CE of variable snapshots
+        self.assertTrue(vs1.input_ces[0] == self.graph.cell_executions[0])
+        self.assertTrue(vs2.output_ce == self.graph.cell_executions[0])
 
 
 if __name__ == '__main__':

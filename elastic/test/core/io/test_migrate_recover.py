@@ -7,7 +7,6 @@ import unittest
 from ipykernel.zmqshell import ZMQInteractiveShell
 
 from elastic.core.graph.graph import DependencyGraph
-from elastic.test.test_utils import get_test_input_nodeset, get_test_output_nodeset
 from elastic.core.io.migrate import migrate
 from elastic.core.io.recover import resume
 

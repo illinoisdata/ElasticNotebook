@@ -1,6 +1,6 @@
 import unittest
 
-from elastic.algorithm.baseline import MigrateAllBaseline, RecomputeAllBaseline, RandomBaseline
+from elastic.algorithm.baseline import MigrateAllBaseline, RecomputeAllBaseline
 from elastic.test.test_utils import get_problem_setting
 
 
@@ -26,18 +26,6 @@ class TestOptimizerBaselines(unittest.TestCase):
         # Tests that all VSs are recomputed.
         vss_to_migrate = opt.select_vss()
         self.assertEqual(set(), vss_to_migrate)
-
-    def test_random(self):
-        # Setup problem
-        opt = RandomBaseline(migration_speed_bps=1)
-        graph, active_vss = get_problem_setting()
-        opt.dependency_graph = graph
-        opt.active_vss = active_vss
-
-        # Tests that some VSs are migrated.
-        vss_to_migrate = opt.select_vss()
-        self.assertTrue(len(vss_to_migrate) >= 0)
-        self.assertTrue(len(vss_to_migrate) <= 2)
 
 
 if __name__ == '__main__':

@@ -1,38 +1,20 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 from elastic.core.graph.graph import DependencyGraph
 from elastic.core.graph.variable_snapshot import VariableSnapshot
 from elastic.core.graph.cell_execution import CellExecution
-from elastic.core.graph.node_set import NodeSet, NodeSetType
 
 
-def get_test_input_nodeset(vss: list):
-    return NodeSet(vss, NodeSetType.INPUT)
-
-
-def get_test_output_nodeset(vss: list):
-    return NodeSet(vss, NodeSetType.OUTPUT)
-
-
-def get_test_dummy_nodeset(vss: list):
-    return NodeSet(vss, NodeSetType.DUMMY)
-
-
-def get_test_vs(name: str, ver=1, index=0, deleted=False):
+def get_test_vs(name: str, ver=0, deleted=False):
     """
         Fast variable snapshot creation with pre-filled fields.
     """
-    return VariableSnapshot(name, ver, index, deleted)
+    return VariableSnapshot(name, ver, deleted)
 
 
-def get_test_oe(cell_num: int, cell="", cell_runtime=1, start_time=1,
-                src=NodeSet([], NodeSetType.INPUT), dst=NodeSet([], NodeSetType.OUTPUT)):
+def get_test_ce(cell_num: int, cell="", cell_runtime=1, start_time=1, src_vss=[], dst_vss=[]):
     """
-        Fast operation event creation with pre-filled fields.
+        Fast cell execution creation with pre-filled fields.
     """
-    return CellExecution(cell_num, cell, cell_runtime, start_time, src, dst)
+    return CellExecution(cell_num, cell, cell_runtime, start_time, src_vss, dst_vss)
 
 
 def get_problem_setting():
@@ -48,24 +30,16 @@ def get_problem_setting():
     graph = DependencyGraph()
 
     # Variable snapshots
-    vs1 = graph.create_variable_snapshot("x", 0, False)
-    vs2 = graph.create_variable_snapshot("y", 0, False)
-    vs3 = graph.create_variable_snapshot("z", 0, True)
+    vs1 = graph.create_variable_snapshot("x", False)
+    vs2 = graph.create_variable_snapshot("y", False)
+    vs3 = graph.create_variable_snapshot("z", True)
     vs1.size = 2
     vs2.size = 2
-    active_vss = [vs1, vs2]
+    active_vss = {vs1, vs2}
 
-    # Nodesets
-    src1 = NodeSet([], NodeSetType.INPUT)
-    dst1 = NodeSet([vs3], NodeSetType.OUTPUT)
-    src2 = NodeSet([vs3], NodeSetType.INPUT)
-    dst2 = NodeSet([vs1], NodeSetType.OUTPUT)
-    src3 = NodeSet([vs3], NodeSetType.INPUT)
-    dst3 = NodeSet([vs2], NodeSetType.OUTPUT)
-
-    # Operation events
-    graph.add_cell_execution("", 3, 0, src1, dst1)
-    graph.add_cell_execution("", 0.1, 0, src2, dst2)
-    graph.add_cell_execution("", 0.1, 0, src3, dst3)
+    # Cell executions
+    graph.add_cell_execution("", 3, 0, set(), {vs3})
+    graph.add_cell_execution("", 0.1, 0, {vs3}, {vs1})
+    graph.add_cell_execution("", 0.1, 0, {vs3}, {vs2})
 
     return graph, active_vss

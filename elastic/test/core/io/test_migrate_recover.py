@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 import os
 import unittest
 from ipykernel.zmqshell import ZMQInteractiveShell
@@ -25,20 +21,20 @@ class TestMigrateRecover(unittest.TestCase):
 
         # Construct simple test case
         graph = DependencyGraph()
-        vs1 = graph.create_variable_snapshot("x", 0, False)
-        vs2 = graph.create_variable_snapshot("y", 0, False)
-        graph.add_cell_execution("", 1, 1, get_test_input_nodeset([]), get_test_output_nodeset([vs1, vs2]))
+        vs1 = graph.create_variable_snapshot("x", False)
+        vs2 = graph.create_variable_snapshot("y", False)
+        graph.add_cell_execution("", 1, 1, set(), {vs1, vs2})
 
         vss_to_migrate = {vs1}
         vss_to_recompute = {vs2}
         oes_to_migrate = {graph.cell_executions[0]}
 
         # Migrate the singular variable.
-        migrate(graph, shell, vss_to_migrate, vss_to_recompute, oes_to_migrate, TEST_FILE_PATH)
+        migrate(graph, shell, vss_to_migrate, vss_to_recompute, oes_to_migrate, set(), TEST_FILE_PATH)
         self.assertTrue(os.path.exists(TEST_FILE_PATH))
 
         # Recover the checkpoint.
-        graph2, variables, vss_to_migrate2, vss_to_recompute2, oes_to_recompute2 = resume(TEST_FILE_PATH)
+        graph2, variables, vss_to_migrate2, vss_to_recompute2, oes_to_recompute2, udfs = resume(TEST_FILE_PATH)
 
         # Variable 'x' should be successfully migrated.
         self.assertEqual(1, len(variables[graph2.cell_executions[0]]))

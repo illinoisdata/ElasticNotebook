@@ -7,7 +7,6 @@ import unittest
 from ipykernel.zmqshell import ZMQInteractiveShell
 
 from elastic.core.graph.graph import DependencyGraph
-from elastic.test.test_utils import get_test_input_nodeset, get_test_output_nodeset
 from elastic.core.notebook.restore_notebook import restore_notebook
 from IPython.terminal.interactiveshell import TerminalInteractiveShell
 
@@ -18,18 +17,17 @@ class TestRestoreNotebook(unittest.TestCase):
 
         # Construct simple test case
         self.graph = DependencyGraph()
-        self.vs1 = self.graph.create_variable_snapshot("x", 0, False)
-        self.vs2 = self.graph.create_variable_snapshot("y", 0, False)
-        self.graph.add_cell_execution("x = 1\ny = 2", 1, 1, get_test_input_nodeset([]),
-                                      get_test_output_nodeset([self.vs1, self.vs2]))
+        self.vs1 = self.graph.create_variable_snapshot("x", False)
+        self.vs2 = self.graph.create_variable_snapshot("y", False)
+        self.graph.add_cell_execution("x = 1\ny = 2", 1, 1, set(), {self.vs1, self.vs2})
 
     def test_restore_notebook_redeclare(self):
         """
             Test redeclaring variables works as expected.
         """
         # Redeclare x and y into the kernel.
-        oe = self.graph.cell_executions[0]
-        restore_notebook(self.graph, self.shell, {oe: [(self.vs1, 1), (self.vs2, 2)]}, set())
+        ce = self.graph.cell_executions[0]
+        restore_notebook(self.graph, self.shell, {ce: [(self.vs1, 1), (self.vs2, 2)]}, set())
 
         # Assert that x and y are correctly redeclared.
         self.assertEqual(1, self.shell.user_ns["x"])
@@ -42,8 +40,8 @@ class TestRestoreNotebook(unittest.TestCase):
         shell = TerminalInteractiveShell.instance()
 
         # Recompute the OE to recompute x and y.
-        oe = self.graph.cell_executions[0]
-        restore_notebook(self.graph, shell, {}, {oe})
+        ce = self.graph.cell_executions[0]
+        restore_notebook(self.graph, shell, {ce: []}, {ce})
 
         # Assert that x and y are correctly redeclared.
         self.assertEqual(1, shell.user_ns["x"])

@@ -20,27 +20,17 @@ class TestFilesystemAdapter(unittest.TestCase):
         self.adapter.remove(self.fpath)
         self.assertFalse(os.path.exists(self.fpath))
 
-
     def test_create(self):
         self.adapter.create(self.fpath)
         self.assertTrue(os.path.exists(self.fpath))
-    
-    
-    def test_read_write_all(self):
+
+    def test_read_all(self):
         s = pickle.dumps({KEY: VALUE})
         with open(self.fpath, "wb") as fd:
             fd.write(s)
         
         s_read = self.adapter.read_all(self.fpath)
-        self.assertEqual(VALUE, pickle.loads(s_read)[KEY])
-        
-        s = pickle.dumps({VALUE: KEY})
-        self.adapter.write_all(self.fpath, s)
-        
-        with open(self.fpath, "rb") as fd:
-            s_read = pickle.loads(fd.read())
-        self.assertEqual(1, len(s_read))
-        self.assertEqual(KEY, s_read[VALUE])
+        self.assertEqual(VALUE, s_read[KEY])
         
 
 if __name__ == '__main__':

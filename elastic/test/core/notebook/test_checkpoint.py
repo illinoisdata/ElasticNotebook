@@ -1,13 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2021-2022 University of Illinois
 import os
 import unittest
 from ipykernel.zmqshell import ZMQInteractiveShell
 
-from elastic.core.graph.graph import DependencyGraph
-from elastic.test.test_utils import get_test_input_nodeset, get_test_output_nodeset, get_problem_setting
+from elastic.test.test_utils import get_problem_setting
 from elastic.core.notebook.checkpoint import checkpoint
 from elastic.algorithm.baseline import MigrateAllBaseline
 from elastic.core.io.recover import resume

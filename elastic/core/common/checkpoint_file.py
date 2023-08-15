@@ -7,6 +7,8 @@ KEY_VARIABLES = "variables"
 KEY_VSS_TO_MIGRATE = "vss_to_migrate"
 KEY_VSS_TO_RECOMPUTE = "vss_to_recompute"
 KEY_CES_TO_RECOMPUTE = "ces_to_recompute"
+KEY_RECOMPUTATION_CES = "recomputation_ces"
+KEY_SERIALIZATION_ORDER = "serialization_order"
 KEY_UDFS = "udfs"
 
 
@@ -29,6 +31,13 @@ class CheckpointFile:
 
         # CEs to recompute to restore non-migrated variables (vss_to_recompute).
         self.ces_to_recompute = None
+
+        # CEs to recompute a given CE. For fault tolerance if certain VSs fail
+        # to deserialize.
+        self.recomputation_ces = None
+
+        # List of objects packed in the pickle file.
+        self.serialization_order = None
 
         # User-declared functions in the session.
         self.udfs = None
@@ -68,6 +77,20 @@ class CheckpointFile:
     def get_ces_to_recompute(self):
         return self.ces_to_recompute
 
+    def with_recomputation_ces(self, recomputation_ces: dict):
+        self.recomputation_ces = recomputation_ces
+        return self
+
+    def get_recomputation_ces(self):
+        return self.recomputation_ces
+
+    def with_serialization_order(self, serialization_order: list):
+        self.serialization_order = serialization_order
+        return self
+
+    def get_serialization_order(self):
+        return self.serialization_order
+
     def with_udfs(self, udfs: set):
         self.udfs = udfs
         return self
@@ -82,6 +105,8 @@ class CheckpointFile:
             KEY_VSS_TO_MIGRATE: self.vss_to_migrate,
             KEY_VSS_TO_RECOMPUTE: self.vss_to_recompute,
             KEY_CES_TO_RECOMPUTE: self.ces_to_recompute,
+            KEY_RECOMPUTATION_CES: self.recomputation_ces,
+            KEY_SERIALIZATION_ORDER: self.serialization_order,
             KEY_UDFS: self.udfs
         })
 
@@ -92,4 +117,6 @@ class CheckpointFile:
                                   .with_vss_to_migrate(kv[KEY_VSS_TO_MIGRATE])\
                                   .with_vss_to_recompute(kv[KEY_VSS_TO_RECOMPUTE])\
                                   .with_ces_to_recompute(kv[KEY_CES_TO_RECOMPUTE])\
+                                  .with_recomputation_ces(kv[KEY_RECOMPUTATION_CES])\
+                                  .with_serialization_order(kv[KEY_SERIALIZATION_ORDER])\
                                   .with_udfs(kv[KEY_UDFS])

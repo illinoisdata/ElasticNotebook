@@ -37,7 +37,7 @@ def restore_notebook(graph: DependencyGraph, shell: ZMQInteractiveShell,
                 raise e
         
         # Define output variables in the CE.
-        for pair in variables[ce]:
+        for pair in variables[ce.cell_num]:
             print("Declaring variable", pair[0].name)
             shell.user_ns[pair[0].name] = pair[1]
     

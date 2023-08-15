@@ -13,11 +13,11 @@ if __name__ == '__main__':
     except Exception as e:
         print(e)
 
-    # Run the notebook as is, and generate checkpoint files with Pickle and Dumpsession.
-    try:
-        runtime = run_notebook_baselines(notebook=args.notebook)
-    except Exception as e:
-        print(e)
+    ## Run the notebook as is, and generate checkpoint files with Pickle and Dumpsession.
+    #try:
+    #    runtime = run_notebook_baselines(notebook=args.notebook)
+    #except Exception as e:
+    #    print(e)
 
     # Notebook runtime.
-    print("exec time:", runtime)
+    #print("exec time:", runtime)

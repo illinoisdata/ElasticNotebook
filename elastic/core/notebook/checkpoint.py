@@ -5,6 +5,7 @@ import numpy as np
 from elastic.algorithm.selector import Selector
 from elastic.core.graph.graph import DependencyGraph
 from elastic.core.io.migrate import migrate
+from elastic.core.io.pickle import is_picklable
 from elastic.core.common.profile_variable_size import profile_variable_size
 from ipykernel.zmqshell import ZMQInteractiveShell
 
@@ -111,7 +112,7 @@ def checkpoint(graph: DependencyGraph, shell: ZMQInteractiveShell, fingerprint_d
     # Store the notebook checkpoint to the specified location.
     migrate_start = time.time()
     migrate_success = True
-    migrate(graph, shell, vss_to_migrate, vss_to_recompute, ces_to_recompute, udfs, filename)
+    migrate(graph, shell, vss_to_migrate, vss_to_recompute, ces_to_recompute, udfs, selector.recomputation_ces, selector.overlapping_vss, filename)
     migrate_end = time.time()
 
     if write_log_location:

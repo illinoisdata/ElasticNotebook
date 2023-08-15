@@ -1,3 +1,4 @@
+import dill
 from collections import defaultdict
 
 from pathlib import Path
@@ -14,7 +15,7 @@ FILENAME = "./notebook.pickle"
 
 
 def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: set, vss_to_recompute: set,
-            ces_to_recompute: set, udfs, filename: str):
+            ces_to_recompute: set, udfs, recomputation_ces, overlapping_vss, filename: str):
     """
         Writes the graph representation of the notebook, migrated variables, and instructions for recomputation as the
         specified file.
@@ -31,12 +32,28 @@ def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: 
     # Retrieve variables
     variables = defaultdict(list)
     for vs in vss_to_migrate:
-        variables[vs.output_ce].append((vs, shell.user_ns[vs.name]))
+        variables[vs.output_ce].append(vs)
 
-    # Retrieve variables to migrate from the current session.
-    variables = defaultdict(list)
+    # construct serialization order list.
+    temp_dict = {}
+    serialization_order = []
+    for (vs1, vs2) in overlapping_vss:
+        if vs1 in temp_dict:
+            temp_dict[vs1].add(vs2)
+        elif vs2 in temp_dict:
+            temp_dict[vs2].add(vs1)
+        else:
+            # create new entry
+            new_set = (vs1, vs2)
+            temp_dict[vs1] = new_set
+            temp_dict[vs2] = new_set
+
     for vs in vss_to_migrate:
-        variables[vs.output_ce].append((vs, shell.user_ns[vs.name]))
+        if vs not in temp_dict:
+            temp_dict[vs] = {vs}
+
+    for v in temp_dict.values():
+        serialization_order.append(list(v))
 
     # Construct checkpoint JSON.
     adapter = FilesystemAdapter()
@@ -45,11 +62,26 @@ def migrate(graph: DependencyGraph, shell: ZMQInteractiveShell, vss_to_migrate: 
         .with_vss_to_migrate(vss_to_migrate) \
         .with_vss_to_recompute(vss_to_recompute) \
         .with_ces_to_recompute(ces_to_recompute) \
+        .with_recomputation_ces(recomputation_ces) \
+        .with_serialization_order(serialization_order) \
         .with_udfs(udfs)
 
-    # Write the JSON file to the specified location. Uses the default location if a file path isn't specified.
     if filename:
         print("Checkpoint saved to:", filename)
-        adapter.write_all(Path(filename), metadata)
+        write_path = filename
     else:
-        adapter.write_all(Path(FILENAME), metadata)
+        write_path = FILENAME
+
+    with open(Path(write_path), "wb") as output_file:
+        dill.dump(metadata, output_file)
+        for vs_list in serialization_order:
+            obj_list = []
+            for vs in vs_list:
+                obj_list.append(shell.user_ns[vs.name])
+            dill.dump(obj_list, output_file)
+    # Write the JSON file to the specified location. Uses the default location if a file path isn't specified.
+    #if filename:
+    #    print("Checkpoint saved to:", filename)
+    #    adapter.write_all(Path(filename), metadata)
+    #else:
+       # adapter.write_all(Path(FILENAME), metadata)

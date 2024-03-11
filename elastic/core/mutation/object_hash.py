@@ -11,6 +11,7 @@ import torch
 import copy
 import io
 import xxhash
+import networkx as nx
 
 BASE_TYPES = [type(None), FunctionType]
 

@@ -27,7 +27,7 @@ class TestRestoreNotebook(unittest.TestCase):
         """
         # Redeclare x and y into the kernel.
         ce = self.graph.cell_executions[0]
-        restore_notebook(self.graph, self.shell, {ce: [(self.vs1, 1), (self.vs2, 2)]}, set())
+        restore_notebook(self.graph, self.shell, {ce.cell_num: [(self.vs1, 1), (self.vs2, 2)]}, set())
 
         # Assert that x and y are correctly redeclared.
         self.assertEqual(1, self.shell.user_ns["x"])
@@ -41,7 +41,7 @@ class TestRestoreNotebook(unittest.TestCase):
 
         # Recompute the OE to recompute x and y.
         ce = self.graph.cell_executions[0]
-        restore_notebook(self.graph, shell, {ce: []}, {ce})
+        restore_notebook(self.graph, shell, {ce.cell_num: []}, {ce})
 
         # Assert that x and y are correctly redeclared.
         self.assertEqual(1, shell.user_ns["x"])

@@ -29,4 +29,7 @@ class VariableSnapshot:
         # Size of variable pointed to by VS; estimated at migration time.
         self.size = 0
 
-
+    def __repr__(self):
+        return f'name: {self.name}\n\
+                 version: {self.version}\n\
+                 deleted: {self.deleted}'

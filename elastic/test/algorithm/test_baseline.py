@@ -13,7 +13,7 @@ class TestOptimizerBaselines(unittest.TestCase):
         opt.active_vss = active_vss
 
         # Tests that all VSs are migrated.
-        vss_to_migrate = opt.select_vss()
+        vss_to_migrate, _ = opt.select_vss()
         self.assertEqual({graph.variable_snapshots["x"][0], graph.variable_snapshots["y"][0]}, vss_to_migrate)
 
     def test_recompute_all(self):

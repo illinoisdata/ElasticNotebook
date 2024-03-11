@@ -11,7 +11,7 @@ class MigrateAllBaseline(Selector):
         super().__init__(migration_speed_bps)
         self.recomputation_ces = {}
 
-    def select_vss(self) -> set:
+    def select_vss(self, write_log_location=None, notebook_name=None, optimizer_name=None) -> set:
         vss_to_migrate = set()
         for vs in self.active_vss:
             if vs.size < np.inf:
